@@ -2,10 +2,8 @@
 
 namespace App\Filament\Widgets\Analytics;
 
-use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Services\Analytics\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
-use Filament\Support\Enums\Size;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -113,38 +111,6 @@ HTML);
     }
 
     /**
-     * Render a stat description line with an optional clickable alert badge.
-     */
-    private function descriptionWithAlertBadge(
-        string $comparisonText,
-        int $alertCount,
-        string $alertLabel,
-        string $alertUrl,
-        string $alertColor,
-    ): HtmlString {
-        return new HtmlString(Blade::render(
-            <<<'BLADE'
-<div class="flex flex-wrap items-center gap-2">
-    <span class="text-sm text-gray-500">{{ $comparisonText }}</span>
-    @if ($alertCount > 0)
-        <x-filament::badge tag="a" :href="$alertUrl" :color="$alertColor" :size="$badgeSize">
-            {{ $alertCount }} {{ $alertLabel }}
-        </x-filament::badge>
-    @endif
-</div>
-BLADE,
-            [
-                'comparisonText' => $comparisonText,
-                'alertCount' => $alertCount,
-                'alertLabel' => $alertLabel,
-                'alertUrl' => $alertUrl,
-                'alertColor' => $alertColor,
-                'badgeSize' => Size::Small,
-            ],
-        ));
-    }
-
-    /**
      * Tailwind selector classes that color the main stat icon using the panel primary color.
      */
     private function primaryStatIconClasses(): string
@@ -173,9 +139,6 @@ BLADE,
         $renewalDelta = $this->deltaInline($metrics['renewals'], $previous['renewals']);
         $expiredDelta = $this->deltaInline($metrics['expired_not_renewed'], $previous['expired_not_renewed']);
 
-        $expiringSoonCount = $service->expiringSubscriptionsCount();
-        $expiringUrl = SubscriptionResource::getUrl('index', ['activeTab' => 'expiring']);
-
         return [
             Stat::make(
                 'Active Members',
@@ -183,13 +146,7 @@ BLADE,
             )
                 ->icon('heroicon-o-user-group')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description($this->descriptionWithAlertBadge(
-                    'vs '.(string) $previous['active_members'].' previous period',
-                    $expiringSoonCount,
-                    'Expiring',
-                    $expiringUrl,
-                    'warning',
-                ))
+                ->description('vs '.(string) $previous['active_members'].' previous period')
                 ->descriptionColor('gray'),
             Stat::make(
                 'New Members',

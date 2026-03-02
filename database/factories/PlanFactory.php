@@ -18,7 +18,7 @@ class PlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'service_id' => Service::factory(),
+            'service_id' => Service::query()->inRandomOrder()->value('id') ?? Service::factory(),
             'code' => $this->faker->unique()->numerify('PLN###'),
             'name' => $this->faker->name(),
             'description' => $this->faker->text(50),

@@ -25,5 +25,9 @@ class DatabaseSeeder extends Seeder
             InvoiceSeeder::class,
             ExpenseSeeder::class,
         ]);
+
+        if (app()->environment(['local', 'development'])) {
+            $this->call(DashboardDemoSeeder::class);
+        }
     }
 }

@@ -140,12 +140,6 @@ HTML);
         $outstandingDelta = $this->deltaInline($metrics['outstanding'], $previous['outstanding']);
         $profitDelta = $this->deltaInline($metrics['profit'], $previous['profit']);
 
-        $netRevenueSpark = array_values($service->revenueTrendByDate($range));
-        $netRevenueSpark = array_slice($netRevenueSpark, max(count($netRevenueSpark) - 7, 0));
-
-        $collectedSpark = array_values($service->collectedTrendByDate($range));
-        $collectedSpark = array_slice($collectedSpark, max(count($collectedSpark) - 7, 0));
-
         return [
             Stat::make(
                 'Net Revenue',
@@ -153,7 +147,6 @@ HTML);
             )
                 ->icon('heroicon-o-banknotes')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->chart($netRevenueSpark)
                 ->description('vs '.Helpers::formatCurrency($previous['net_revenue']).' previous period')
                 ->descriptionColor('gray'),
             Stat::make(
@@ -162,7 +155,6 @@ HTML);
             )
                 ->icon('heroicon-o-arrow-down-tray')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->chart($collectedSpark)
                 ->description('vs '.Helpers::formatCurrency($previous['collected']).' previous period')
                 ->descriptionColor('gray'),
             Stat::make(
