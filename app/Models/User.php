@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Relations\hasMany;
 use App\Enums\Status;
+use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\hasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements HasAvatar, FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasApiTokens, SoftDeletes, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -38,7 +38,7 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
         'country',
         'city',
         'state',
-        'pincode'
+        'pincode',
 
     ];
 
@@ -63,7 +63,7 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'dob' => 'date',
-            'status' => Status::class
+            'status' => Status::class,
         ];
     }
 
@@ -102,7 +102,7 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
     /**
      * Determine if the user can access the Filament panel.
      *
-     * @param Panel $panel The Filament panel instance.
+     * @param  Panel  $panel  The Filament panel instance.
      * @return bool True if the user can access the panel, false otherwise.
      */
     public function canAccessPanel(Panel $panel): bool

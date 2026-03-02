@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Contracts\SequenceRepository;
+use App\Contracts\SettingsRepository;
+use App\Services\JsonSequenceRepository;
+use App\Services\JsonSettingsRepository;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteBulkAction;
-use Illuminate\Support\Collection;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -16,19 +19,28 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Console\Command as ArtisanCommand;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        $this->app->singleton(SettingsRepository::class, JsonSettingsRepository::class);
+        $this->app->singleton(SequenceRepository::class, JsonSequenceRepository::class);
+    }
+
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
         FilamentAsset::register([
-            Css::make('gymie-styles', __DIR__ . '/../../resources/css/custom.css'),
+            Css::make('gymie-styles', __DIR__.'/../../resources/css/custom.css'),
         ]);
 
         /**
@@ -126,7 +138,7 @@ class AppServiceProvider extends ServiceProvider
                                 $moduleName = class_basename($record);
                                 $label = Str::kebab($relation);
                                 $action
-                                    ->modalIcon('heroicon-o-x-mark',)
+                                    ->modalIcon('heroicon-o-x-mark')
                                     ->modalHeading("Oops! Cannot Delete {$moduleName}")
                                     ->modalDescription("This record has {$count} {$label}. Please delete them first.")
                                     ->modalCancelAction(false)
@@ -149,7 +161,7 @@ class AppServiceProvider extends ServiceProvider
                         if (isset($map[$class])) {
                             foreach ($map[$class] as $relation) {
                                 if ($record->$relation()->exists()) {
-                                    $count      = $record->$relation()->count();
+                                    $count = $record->$relation()->count();
                                     $moduleName = Str::pluralStudly(class_basename($record));
                                     $label = Str::kebab($relation);
                                     $action

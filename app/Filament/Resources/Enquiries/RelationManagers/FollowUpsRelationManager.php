@@ -2,14 +2,13 @@
 
 namespace App\Filament\Resources\Enquiries\RelationManagers;
 
-use Filament\Schemas\Schema;
-use Filament\Actions\CreateAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use App\Filament\Resources\FollowUps\FollowUpResource;
-use App\Models\FollowUp;
+use App\Filament\Resources\FollowUps\Tables\FollowUpTable;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
 class FollowUpsRelationManager extends RelationManager
@@ -30,9 +29,6 @@ class FollowUpsRelationManager extends RelationManager
 
     /**
      * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public function form(Schema $schema): Schema
     {
@@ -41,21 +37,18 @@ class FollowUpsRelationManager extends RelationManager
 
     /**
      * Define the table for listing records in the resource.
-     *
-     * @param Table $table
-     * @return Table
      */
     public function table(Table $table): Table
     {
         return $table
-            ->columns(FollowUp::getTableColumns())
+            ->columns(FollowUpTable::getColumns())
             ->headerActions([
                 CreateAction::make('create')
                     ->icon('heroicon-m-plus')
-                    ->visible(fn() => $this->getOwnerRecord()->followUps()->exists())
+                    ->visible(fn () => $this->getOwnerRecord()->followUps()->exists())
                     ->createAnother(false)
                     ->modalHeading('New follow up')
-                    ->modalWidth('sm')
+                    ->modalWidth('sm'),
             ])
             ->emptyStateIcon('heroicon-o-arrow-path-rounded-square')
             ->emptyStateHeading('No Follow Ups')
@@ -68,8 +61,8 @@ class FollowUpsRelationManager extends RelationManager
                     ->modalHeading('New follow up')
                     ->modalWidth('sm'),
             ])
-            ->filters(FollowUpResource::getTableFilters())
-            ->recordActions(FollowUpResource::getTableActions())
+            ->filters(FollowUpTable::getTableFilters())
+            ->recordActions(FollowUpTable::getTableActions())
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

@@ -2,28 +2,26 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\Settings;
 use App\Filament\Resources\Enquiries\EnquiryResource;
+use App\Filament\Resources\Expenses\ExpenseResource;
 use App\Filament\Resources\FollowUps\FollowUpResource;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Members\MemberResource;
-use App\Filament\Resources\Expenses\ExpenseResource;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\Services\ServiceResource;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Filament\Resources\Users\UserResource;
-use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
+use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -34,15 +32,27 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+/**
+ * Filament panel provider for the main (tenant) admin panel.
+ *
+ * This app is intentionally single-tenant.
+ */
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * Configure the panel.
+     */
     public function panel(Panel $panel): Panel
     {
-        $panel = $this->basePanel($panel);
-        $panel->navigation(fn(NavigationBuilder $builder) => $this->buildNavigation($builder));
-        return $panel;
+        return $this->basePanel($panel)
+            ->navigation(fn (NavigationBuilder $builder) => $this->buildNavigation($builder));
     }
 
+    /**
+     * Configure the base panel options that are common to both OSS + platform.
+     *
+     * This app does not ship any tenancy concerns.
+     */
     public function basePanel(Panel $panel): Panel
     {
         return $panel
@@ -64,13 +74,10 @@ class AdminPanelProvider extends PanelProvider
                 Settings::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->plugins([FilamentShieldPlugin::make()
-                ->navigationIcon(fn(): null => null)
-                ->activeNavigationIcon(fn(): null => null)])
+                ->navigationIcon(fn (): null => null)
+                ->activeNavigationIcon(fn (): null => null)])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -90,6 +97,9 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearchKeyBindings(['command+k', 'ctrl+k']);
     }
 
+    /**
+     * Build grouped navigation for the admin panel.
+     */
     protected function buildNavigation(NavigationBuilder $builder): NavigationBuilder
     {
         $administration = [
@@ -140,11 +150,16 @@ class AdminPanelProvider extends PanelProvider
             ->item(
                 NavigationItem::make('Dashboard')
                     ->icon('heroicon-o-chart-bar')
-                    ->url(fn() => Dashboard::getUrl())
-                    ->isActiveWhen(fn() => request()->routeIs('filament.admin.pages.dashboard'))
+                    ->url(fn () => Dashboard::getUrl())
+                    ->isActiveWhen(fn () => request()->routeIs('filament.admin.pages.dashboard'))
             );
     }
 
+    /**
+     * Panel color palette.
+     *
+     * @return array<string, mixed>
+     */
     protected function colors(): array
     {
         return [

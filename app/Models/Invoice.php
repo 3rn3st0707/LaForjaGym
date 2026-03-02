@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\Status;
 use App\Helpers\Helpers;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class Invoice extends Model
 {
@@ -43,25 +43,42 @@ class Invoice extends Model
      * @var array
      */
     protected $casts = [
-        'date'        => 'date',
-        'due_date'    => 'date',
-        'status'      => Status::class
+        'date' => 'date',
+        'due_date' => 'date',
+        'status' => Status::class,
     ];
 
     /**
      * The subscription this invoice is for.
-     *
-     * @return BelongsTo
      */
-    public function subscription()
+    public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
     }
 
     /**
-     * Get the transactions for the invoice.
+     * Get a human-friendly label for the invoice status.
      *
-     * @return HasMany
+     * This is useful for tables and UI elements where you want a consistent
+     * display label regardless of whether the attribute is currently cast.
+     */
+    public function getDisplayStatusLabel(): string
+    {
+        $status = $this->status;
+
+        if ($status instanceof Status) {
+            return $status->getLabel();
+        }
+
+        if (is_string($status) && filled($status)) {
+            return ucfirst($status);
+        }
+
+        return '';
+    }
+
+    /**
+     * Get the transactions for the invoice.
      */
     public function transactions(): HasMany
     {
@@ -70,8 +87,6 @@ class Invoice extends Model
 
     /**
      * Sync the invoice's paid_amount, due_amount, and status based on its transactions.
-     *
-     * @return void
      */
     public function syncFromTransactions(): void
     {
@@ -136,7 +151,7 @@ class Invoice extends Model
         parent::boot();
 
         static::saving(function ($invoice) {
-            if (!$invoice->number) {
+            if (! $invoice->number) {
                 $invoice->number = Helpers::generateLastNumber('invoice', Invoice::class, $invoice->date);
             }
             Helpers::updateLastNumber('invoice', $invoice->number, $invoice->date);

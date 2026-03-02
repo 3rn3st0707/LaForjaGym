@@ -1,0 +1,295 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Filament\Widgets\Analytics\CashflowTrendChartWidget;
+use App\Filament\Widgets\Analytics\ExpenseCategoriesDoughnutChartWidget;
+use App\Filament\Widgets\Analytics\FinancialMetricsWidget;
+use App\Filament\Widgets\Analytics\MembershipMetricsWidget;
+use App\Filament\Widgets\Analytics\MembershipOverviewSubscriptionsTableWidget;
+use App\Filament\Widgets\Analytics\RecentTransactionsTableWidget;
+use Carbon\CarbonImmutable;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Pages\Dashboard\Concerns\HasFilters;
+use Filament\Panel;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Illuminate\Contracts\View\View;
+
+/**
+ * Main application dashboard.
+ *
+ * This dashboard hosts business analytics widgets (collected-based) and provides
+ * a time-range filter that widgets can read via `InteractsWithPageFilters`.
+ */
+class Dashboard extends \Filament\Pages\Dashboard
+{
+    use HasFilters;
+
+    protected static ?string $title = 'Dashboard';
+
+    public static function getRoutePath(Panel $panel): string
+    {
+        return '/';
+    }
+
+    /**
+     * Render a custom header that includes a real select field for the date range.
+     *
+     * For a select-style control in the top-right, we render a custom header view
+     * that binds directly to this Livewire component.
+     */
+    public function getHeader(): ?View
+    {
+        return view('filament.pages.dashboard-header');
+    }
+
+    /**
+     * Dashboard header form schema (date range controls).
+     *
+     * We use Filament form components (non-native select) instead of raw HTML so
+     * the control feels consistent with the rest of the admin UI.
+     */
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->inline()
+            ->statePath('filters')
+            ->extraAttributes([
+                'class' => 'flex flex-wrap items-center justify-end gap-2',
+            ])
+            ->components([
+                Select::make('period')
+                    ->hiddenLabel()
+                    ->native(false)
+                    ->prefixIcon('heroicon-o-calendar-days')
+                    ->options([
+                        '7days' => 'Last 7 days',
+                        '30days' => 'Last 30 days',
+                        'month' => 'Month to date',
+                        'quarter' => 'Quarter to date',
+                        'year' => 'Year to date',
+                        'custom' => 'Custom range',
+                    ])
+                    ->default('7days')
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state): void {
+                        $this->setPeriod((string) $state);
+                    })
+                    ->grow(false)
+                    ->extraFieldWrapperAttributes([
+                        'class' => 'w-full sm:w-56',
+                    ]),
+                DatePicker::make('startDate')
+                    ->hiddenLabel()
+                    ->placeholder('Start')
+                    ->visible(fn (Get $get): bool => $get('period') === 'custom')
+                    ->live()
+                    ->grow(false)
+                    ->extraFieldWrapperAttributes([
+                        'class' => 'w-full sm:w-40',
+                    ]),
+                DatePicker::make('endDate')
+                    ->hiddenLabel()
+                    ->placeholder('End')
+                    ->visible(fn (Get $get): bool => $get('period') === 'custom')
+                    ->live()
+                    ->grow(false)
+                    ->extraFieldWrapperAttributes([
+                        'class' => 'w-full sm:w-40',
+                    ]),
+            ]);
+    }
+
+    public function getColumns(): int|array
+    {
+        return [
+            'default' => 1,
+            'md' => 4,
+        ];
+    }
+
+    /**
+     * Render dashboard widgets in grouped layout blocks.
+     *
+     * We group Financial + Spending Overview together so the two cards always
+     * sit side-by-side on larger screens.
+     */
+    public function getWidgetsContentComponent(): Component
+    {
+        $columns = $this->getColumns();
+
+        return Grid::make(1)->schema([
+            Grid::make($columns)->schema([
+                ...$this->getWidgetsSchemaComponents([
+                    MembershipMetricsWidget::class,
+                ]),
+            ]),
+            Grid::make($columns)->schema(
+                $this->getWidgetsSchemaComponents([
+                    FinancialMetricsWidget::class,
+                    ExpenseCategoriesDoughnutChartWidget::class,
+                ]),
+            ),
+            Grid::make($columns)->schema([
+                ...$this->getWidgetsSchemaComponents([
+                    MembershipOverviewSubscriptionsTableWidget::class,
+                    RecentTransactionsTableWidget::class,
+                ]),
+            ]),
+            Grid::make($columns)->schema(
+                $this->getWidgetsSchemaComponents([
+                    CashflowTrendChartWidget::class,
+                ]),
+            ),
+        ]);
+    }
+
+    /**
+     * Initialize the filters for first-time visits where there is no persisted state.
+     *
+     * This is called from the header view using `wire:init`, so the select field
+     * always has a valid value without relying on mount-ordering details.
+     */
+    public function ensureDefaultFilters(): void
+    {
+        $period = (string) ($this->filters['period'] ?? '');
+
+        if ($period === 'ytd') {
+            $this->filters['period'] = 'year';
+            $this->updatedFilters();
+
+            return;
+        }
+
+        if ($period !== '') {
+            return;
+        }
+
+        $this->applyPresetRange('7days');
+    }
+
+    /**
+     * Handle selecting a period from the dashboard header select.
+     *
+     * @param  '7days'|'30days'|'month'|'quarter'|'year'|'custom'  $period
+     */
+    public function setPeriod(string $period): void
+    {
+        if ($period === 'custom') {
+            $today = CarbonImmutable::today(config('app.timezone'));
+
+            $this->filters = [
+                ...($this->filters ?? []),
+                'period' => 'custom',
+                'startDate' => (string) (($this->filters['startDate'] ?? null) ?: $today->subDays(6)->toDateString()),
+                'endDate' => (string) (($this->filters['endDate'] ?? null) ?: $today->toDateString()),
+            ];
+
+            $this->updatedFilters();
+
+            return;
+        }
+
+        $this->applyPresetRange($period);
+    }
+
+    /**
+     * Apply the currently selected custom range (start & end dates).
+     */
+    public function applyCustomRangeFromFilters(): void
+    {
+        $startDate = (string) ($this->filters['startDate'] ?? '');
+        $endDate = (string) ($this->filters['endDate'] ?? '');
+
+        if (($startDate === '') || ($endDate === '')) {
+            return;
+        }
+
+        $this->applyCustomRange($startDate, $endDate);
+    }
+
+    /**
+     * Placeholder for the Export button.
+     *
+     * Export behavior will be implemented later.
+     */
+    public function export(): void
+    {
+        //
+    }
+
+    /**
+     * Apply a preset range to the dashboard filters.
+     *
+     * @param  '7days'|'30days'|'month'|'quarter'|'year'  $preset
+     */
+    private function applyPresetRange(string $preset): void
+    {
+        $today = CarbonImmutable::today(config('app.timezone'));
+
+        [$start, $end, $period] = match ($preset) {
+            '30days' => [$today->subDays(29), $today, '30days'],
+            'quarter' => [$today->startOfQuarter(), $today, 'quarter'],
+            'year' => [$today->startOfYear(), $today, 'year'],
+            default => [$today->subDays(6), $today, '7days'],
+        };
+
+        if ($preset === 'month') {
+            $start = $today->startOfMonth();
+            $end = $today;
+            $period = 'month';
+        }
+
+        $this->filters = [
+            'period' => $period,
+            'startDate' => $start->toDateString(),
+            'endDate' => $end->toDateString(),
+        ];
+
+        $this->updatedFilters();
+    }
+
+    /**
+     * Apply a custom range to the dashboard filters.
+     */
+    private function applyCustomRange(string $startDate, string $endDate): void
+    {
+        $timezone = config('app.timezone');
+
+        $start = CarbonImmutable::parse($startDate, $timezone)->startOfDay();
+        $end = CarbonImmutable::parse($endDate, $timezone)->endOfDay();
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end->startOfDay(), $start->endOfDay()];
+        }
+
+        $this->filters = [
+            'period' => 'custom',
+            'startDate' => $start->toDateString(),
+            'endDate' => $end->toDateString(),
+        ];
+
+        $this->updatedFilters();
+    }
+
+    /**
+     * Get the active range label for the header selector.
+     */
+    private function getActiveRangeLabel(): string
+    {
+        $period = (string) ($this->filters['period'] ?? '7days');
+
+        return match ($period) {
+            '30days' => 'Last 30 days',
+            'month' => 'Month to date',
+            'quarter' => 'Quarter to date',
+            'ytd', 'year' => 'Year to date',
+            'custom' => 'Custom range',
+            default => 'Last 7 days',
+        };
+    }
+}
