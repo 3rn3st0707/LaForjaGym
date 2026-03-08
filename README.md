@@ -1,10 +1,8 @@
-# Gymie - Gym Management System
+# Gymie
+
+Laravel based web application for gym & club management. Currently being used by many fitness centers. For more information, visit - https://www.gymie.in
 
 ![Gymie](.github/gymie.png)
-
-## Overview
-
-Gymie is a web application specifically designed for gyms to efficiently manage their members, staff, payments, and attendance tracking. It enables fitness centers to streamline internal operations, handle member data effectively, and gain real-time access to information. By improving administrative workflows and enhancing the member experience, Gymie supports the automation and digital transformation of gym management.
 
 ## Requirements
 
