@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\Contracts\SequenceRepository;
 use App\Contracts\SettingsRepository;
+use App\Models\Invoice;
+use App\Models\InvoiceTransaction;
+use App\Observers\InvoiceObserver;
+use App\Observers\InvoiceTransactionObserver;
 use App\Services\JsonSequenceRepository;
 use App\Services\JsonSettingsRepository;
 use Filament\Actions\Action;
@@ -118,6 +122,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->configureDeletionPrevention();
+        $this->registerModelObservers();
+    }
+
+    /**
+     * Register model observers.
+     */
+    private function registerModelObservers(): void
+    {
+        Invoice::observe(InvoiceObserver::class);
+        InvoiceTransaction::observe(InvoiceTransactionObserver::class);
     }
 
     /**

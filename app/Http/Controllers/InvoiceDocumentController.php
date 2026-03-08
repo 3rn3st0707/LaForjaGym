@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Support\Invoices\InvoiceDocument;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\Invoices\InvoiceDocumentNotRenderable;
+use App\Support\Invoices\InvoicePdfRenderer;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class InvoiceDocumentController extends Controller
@@ -14,59 +14,47 @@ class InvoiceDocumentController extends Controller
     /**
      * Render an invoice preview as an inline PDF.
      */
-    public function preview(Invoice $invoice): Response
+    public function preview(Invoice $invoice, InvoicePdfRenderer $renderer): Response
     {
         $invoice = InvoiceDocument::loadForRendering($invoice);
 
         $this->authorize('view', $invoice);
 
-        $data = InvoiceDocument::viewData($invoice);
-
-        if ($data['missing'] !== []) {
+        try {
+            $pdfBytes = $renderer->render($invoice);
+        } catch (InvoiceDocumentNotRenderable $exception) {
             return response()
-                ->view('invoices.error', $data)
+                ->view('invoices.error', $exception->viewData)
                 ->setStatusCode(200);
         }
 
-        $this->ensurePdfFontCacheDirectoryExists();
-
-        $pdf = Pdf::loadView('invoices.document', $data)
-            ->setPaper('a4');
-
-        return $pdf->stream($this->filename($invoice));
+        return response($pdfBytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$this->filename($invoice).'"',
+        ]);
     }
 
     /**
      * Download the invoice as a PDF document.
      */
-    public function download(Invoice $invoice): Response|BinaryFileResponse
+    public function download(Invoice $invoice, InvoicePdfRenderer $renderer): Response|BinaryFileResponse
     {
         $invoice = InvoiceDocument::loadForRendering($invoice);
 
         $this->authorize('view', $invoice);
 
-        $data = InvoiceDocument::viewData($invoice);
-
-        if ($data['missing'] !== []) {
+        try {
+            $pdfBytes = $renderer->render($invoice);
+        } catch (InvoiceDocumentNotRenderable $exception) {
             return response()
-                ->view('invoices.error', $data)
+                ->view('invoices.error', $exception->viewData)
                 ->setStatusCode(422);
         }
 
-        $this->ensurePdfFontCacheDirectoryExists();
-
-        $pdf = Pdf::loadView('invoices.document', $data)
-            ->setPaper('a4');
-
-        return $pdf->download($this->filename($invoice));
-    }
-
-    /**
-     * Ensure DomPDF can write generated font metric files.
-     */
-    private function ensurePdfFontCacheDirectoryExists(): void
-    {
-        File::ensureDirectoryExists(storage_path('fonts'));
+        return response($pdfBytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$this->filename($invoice).'"',
+        ]);
     }
 
     /**

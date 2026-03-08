@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Invoices\Tables;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Helpers\Helpers;
 use App\Models\Invoice;
+use App\Models\InvoiceTransaction;
 use App\Models\Subscription;
+use App\Services\Email\InvoiceEmailService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -331,6 +333,135 @@ class InvoiceTable
                             ->label('Record Actions')
                             ->disabled()
                             ->color('gray'),
+                        Action::make('email_invoice')
+                            ->label('Email Invoice')
+                            ->icon('heroicon-o-envelope')
+                            ->color('info')
+                            ->modalWidth('md')
+                            ->modalSubmitActionLabel('Send')
+                            ->schema([
+                                TextInput::make('to_email')
+                                    ->label('To')
+                                    ->email()
+                                    ->required()
+                                    ->default(fn (Invoice $record): string => (string) ($record->subscription?->member?->email ?? '')),
+                                Textarea::make('note')
+                                    ->label('Note')
+                                    ->rows(2)
+                                    ->placeholder('Optional note…'),
+                            ])
+                            ->action(function (Invoice $record, array $data): void {
+                                app(InvoiceEmailService::class)->queueInvoiceIssuedEmail(
+                                    invoiceId: (int) $record->getKey(),
+                                    toEmail: (string) $data['to_email'],
+                                    note: $data['note'] ?? null,
+                                    actorId: auth()->id(),
+                                );
+
+                                Notification::make()
+                                    ->title('Email queued')
+                                    ->body('Invoice email queued to '.$data['to_email'].'.')
+                                    ->success()
+                                    ->send();
+                            })
+                            ->disabled(function (Invoice $record): bool {
+                                $email = (string) ($record->subscription?->member?->email ?? '');
+
+                                return ! filled($email) || ! filled($record->number) || (float) ($record->total_amount ?? 0) <= 0;
+                            })
+                            ->tooltip(function (Invoice $record): ?string {
+                                if (! filled($record->subscription?->member?->email)) {
+                                    return 'Member email is missing';
+                                }
+
+                                if (! filled($record->number) || (float) ($record->total_amount ?? 0) <= 0) {
+                                    return 'Invoice document is missing required data';
+                                }
+
+                                return null;
+                            })
+                            ->visible(fn (Invoice $record): bool => auth()->user()?->can('update', $record) ?? false),
+                        Action::make('email_receipt')
+                            ->label('Email Receipt')
+                            ->icon('heroicon-o-envelope-open')
+                            ->color('gray')
+                            ->modalWidth('md')
+                            ->modalSubmitActionLabel('Send')
+                            ->schema([
+                                TextInput::make('to_email')
+                                    ->label('To')
+                                    ->email()
+                                    ->required()
+                                    ->default(fn (Invoice $record): string => (string) ($record->subscription?->member?->email ?? '')),
+                                Select::make('payment_transaction_id')
+                                    ->label('Payment')
+                                    ->required()
+                                    ->options(function (Invoice $record): array {
+                                        return InvoiceTransaction::query()
+                                            ->where('invoice_id', $record->getKey())
+                                            ->where('type', 'payment')
+                                            ->latest('occurred_at')
+                                            ->limit(5)
+                                            ->get()
+                                            ->mapWithKeys(function (InvoiceTransaction $transaction): array {
+                                                $occurredAt = $transaction->occurred_at
+                                                    ? $transaction->occurred_at->timezone(config('app.timezone'))->format('d/m/Y H:i')
+                                                    : '-';
+
+                                                return [
+                                                    $transaction->getKey() => "{$occurredAt} - ".Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
+                                                ];
+                                            })
+                                            ->toArray();
+                                    })
+                                    ->default(function (Invoice $record): ?int {
+                                        return InvoiceTransaction::query()
+                                            ->where('invoice_id', $record->getKey())
+                                            ->where('type', 'payment')
+                                            ->latest('occurred_at')
+                                            ->value('id');
+                                    }),
+                                Textarea::make('note')
+                                    ->label('Note')
+                                    ->rows(2)
+                                    ->placeholder('Optional note…'),
+                            ])
+                            ->action(function (Invoice $record, array $data): void {
+                                app(InvoiceEmailService::class)->queuePaymentReceiptEmail(
+                                    invoiceId: (int) $record->getKey(),
+                                    transactionId: (int) $data['payment_transaction_id'],
+                                    toEmail: (string) $data['to_email'],
+                                    note: $data['note'] ?? null,
+                                    actorId: auth()->id(),
+                                );
+
+                                Notification::make()
+                                    ->title('Email queued')
+                                    ->body('Receipt email queued to '.$data['to_email'].'.')
+                                    ->success()
+                                    ->send();
+                            })
+                            ->disabled(function (Invoice $record): bool {
+                                $email = (string) ($record->subscription?->member?->email ?? '');
+
+                                return ! filled($email) || ! filled($record->number) || (float) ($record->total_amount ?? 0) <= 0 || (float) ($record->paid_amount ?? 0) <= 0;
+                            })
+                            ->tooltip(function (Invoice $record): ?string {
+                                if (! filled($record->subscription?->member?->email)) {
+                                    return 'Member email is missing';
+                                }
+
+                                if ((float) ($record->paid_amount ?? 0) <= 0) {
+                                    return 'No payments recorded for this invoice';
+                                }
+
+                                if (! filled($record->number) || (float) ($record->total_amount ?? 0) <= 0) {
+                                    return 'Invoice document is missing required data';
+                                }
+
+                                return null;
+                            })
+                            ->visible(fn (Invoice $record): bool => (auth()->user()?->can('update', $record) ?? false) && (float) ($record->paid_amount ?? 0) > 0),
                         Action::make('preview_invoice')
                             ->label('View PDF')
                             ->icon('heroicon-o-document-text')

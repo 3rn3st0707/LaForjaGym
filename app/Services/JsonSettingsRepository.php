@@ -98,9 +98,29 @@ class JsonSettingsRepository implements SettingsRepository
             'expenses',
             'subscriptions',
             'payments',
+            'notifications',
         ] as $key) {
             if (! array_key_exists($key, $settings) || ! is_array($settings[$key])) {
                 $settings[$key] = [];
+            }
+        }
+
+        if (
+            ! array_key_exists('email', $settings['notifications']) ||
+            ! is_array($settings['notifications']['email'])
+        ) {
+            $settings['notifications']['email'] = [];
+        }
+
+        foreach ([
+            'enabled' => false,
+            'auto_send_invoice_issued' => false,
+            'auto_send_payment_receipt' => false,
+            'invoice_subject_template' => 'Invoice {invoice_number} - {status}',
+            'receipt_subject_template' => 'Payment received - {invoice_number}',
+        ] as $key => $default) {
+            if (! array_key_exists($key, $settings['notifications']['email'])) {
+                $settings['notifications']['email'][$key] = $default;
             }
         }
 
