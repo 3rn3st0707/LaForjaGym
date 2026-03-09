@@ -152,8 +152,9 @@ class InvoiceForm
                                 Radio::make('payment_method')
                                     ->label('Payment Method')
                                     ->options([
-                                        'cash'   => 'Cash',
-                                        'cheque' => 'Cheque',
+                                        'cash' => 'Offline',
+                                        'online' => 'Online',
+                                        'cheque' => 'Cheque (legacy)',
                                     ])
                                     ->default('cash')
                                     ->inline()

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
  */
 class InvoiceTransactionObserver
 {
+    public function __construct(private readonly SettingsRepository $settingsRepository) {}
+
     /**
      * Handle the InvoiceTransaction "created" event.
      */
@@ -27,7 +29,7 @@ class InvoiceTransactionObserver
             return;
         }
 
-        $settings = app(SettingsRepository::class)->get();
+        $settings = $this->settingsRepository->get();
 
         if (
             ! (bool) data_get($settings, 'notifications.email.enabled', false) ||

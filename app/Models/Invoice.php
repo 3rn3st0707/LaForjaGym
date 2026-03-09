@@ -146,11 +146,11 @@ class Invoice extends Model
     /**
      * Boot the model and handle invoice calculations on saving.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::saving(function ($invoice) {
+        static::saving(function (self $invoice): void {
             if (! $invoice->number) {
                 $invoice->number = Helpers::generateLastNumber('invoice', Invoice::class, $invoice->date);
             }

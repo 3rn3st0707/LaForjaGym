@@ -2,6 +2,8 @@
 
 namespace App\Services\Email;
 
+use App\Contracts\SettingsRepository;
+use App\Helpers\Helpers;
 use App\Jobs\SendInvoiceIssuedEmail;
 use App\Jobs\SendInvoicePaymentReceiptEmail;
 use App\Mail\InvoiceIssuedMail;
@@ -25,7 +27,10 @@ use Illuminate\Support\Str;
  */
 final class InvoiceEmailService
 {
-    public function __construct(private readonly InvoicePdfRenderer $renderer) {}
+    public function __construct(
+        private readonly InvoicePdfRenderer $renderer,
+        private readonly SettingsRepository $settingsRepository,
+    ) {}
 
     /**
      * Queue an "invoice issued" email.
@@ -60,51 +65,40 @@ final class InvoiceEmailService
     public function sendInvoiceIssuedEmail(int $invoiceId, string $toEmail, ?string $note = null): void
     {
         $invoice = InvoiceDocument::loadForRendering(Invoice::query()->findOrFail($invoiceId));
-        $member = $invoice->subscription?->member;
+        $memberName = (string) ($invoice->subscription?->member?->name ?? '');
 
-        if (! filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            Log::warning('Skipping invoice email: invalid recipient email.', [
-                'invoice_id' => $invoiceId,
-                'to_email' => $toEmail,
-            ]);
-
+        if (! $this->isValidRecipientEmail($toEmail, [
+            'invoice_id' => $invoiceId,
+        ])) {
             return;
         }
 
-        $settings = app(\App\Contracts\SettingsRepository::class)->get();
-        $gymName = (string) data_get($settings, 'general.gym_name', config('app.name'));
-        $gymEmail = (string) data_get($settings, 'general.gym_email', '');
-        $gymContact = (string) data_get($settings, 'general.gym_contact', '');
-        $subjectTemplate = (string) data_get(
-            $settings,
+        $settings = $this->settingsRepository->get();
+        $gym = $this->gymIdentityFromSettings($settings);
+        $subjectTemplate = (string) data_get($settings,
             'notifications.email.invoice_subject_template',
             'Invoice {invoice_number} - {status}',
         );
 
         $pdfBytes = $this->renderer->render($invoice);
-        $subject = $this->renderSubjectTemplate($subjectTemplate, [
-            'invoice_number' => (string) ($invoice->number ?? ''),
-            'status' => $invoice->getDisplayStatusLabel(),
-            'total' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->total_amount ?? 0)),
-            'paid' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->paid_amount ?? 0)),
-            'due' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->due_amount ?? 0)),
-            'gym_name' => $gymName,
-            'member_name' => (string) ($member?->name ?? ''),
-        ]);
+        $subject = $this->renderSubjectTemplate(
+            $subjectTemplate,
+            $this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+        );
 
         $mailable = new InvoiceIssuedMail(
             invoice: $invoice,
             subjectLine: $subject,
-            memberName: (string) ($member?->name ?? ''),
-            gymName: $gymName,
-            gymEmail: $gymEmail,
-            gymContact: $gymContact,
+            gymName: $gym['name'],
+            gymEmail: $gym['email'],
+            gymContact: $gym['contact'],
+            memberName: $memberName,
             staffNote: $note,
             pdfBytes: $pdfBytes,
         );
 
-        if (filled($gymEmail)) {
-            $mailable->replyTo($gymEmail, $gymName);
+        if (filled($gym['email'])) {
+            $mailable->replyTo($gym['email'], $gym['name']);
         }
 
         Mail::to($toEmail)->send($mailable);
@@ -121,57 +115,100 @@ final class InvoiceEmailService
             ->where('invoice_id', $invoice->getKey())
             ->firstOrFail();
 
-        $member = $invoice->subscription?->member;
+        $memberName = (string) ($invoice->subscription?->member?->name ?? '');
 
-        if (! filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            Log::warning('Skipping payment receipt email: invalid recipient email.', [
-                'invoice_id' => $invoiceId,
-                'invoice_transaction_id' => $transactionId,
-                'to_email' => $toEmail,
-            ]);
-
+        if (! $this->isValidRecipientEmail($toEmail, [
+            'invoice_id' => $invoiceId,
+            'invoice_transaction_id' => $transactionId,
+        ])) {
             return;
         }
 
-        $settings = app(\App\Contracts\SettingsRepository::class)->get();
-        $gymName = (string) data_get($settings, 'general.gym_name', config('app.name'));
-        $gymEmail = (string) data_get($settings, 'general.gym_email', '');
-        $gymContact = (string) data_get($settings, 'general.gym_contact', '');
-        $subjectTemplate = (string) data_get(
-            $settings,
+        $settings = $this->settingsRepository->get();
+        $gym = $this->gymIdentityFromSettings($settings);
+        $subjectTemplate = (string) data_get($settings,
             'notifications.email.receipt_subject_template',
             'Payment received - {invoice_number}',
         );
 
         $pdfBytes = $this->renderer->render($invoice);
-        $subject = $this->renderSubjectTemplate($subjectTemplate, [
-            'invoice_number' => (string) ($invoice->number ?? ''),
-            'status' => $invoice->getDisplayStatusLabel(),
-            'total' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->total_amount ?? 0)),
-            'paid' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->paid_amount ?? 0)),
-            'due' => \App\Helpers\Helpers::formatCurrency((float) ($invoice->due_amount ?? 0)),
-            'gym_name' => $gymName,
-            'member_name' => (string) ($member?->name ?? ''),
-            'payment_amount' => \App\Helpers\Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
-        ]);
+        $subject = $this->renderSubjectTemplate(
+            $subjectTemplate,
+            [
+                ...$this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+                'payment_amount' => Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
+            ],
+        );
 
         $mailable = new InvoicePaymentReceiptMail(
             invoice: $invoice,
             transaction: $transaction,
             subjectLine: $subject,
-            memberName: (string) ($member?->name ?? ''),
-            gymName: $gymName,
-            gymEmail: $gymEmail,
-            gymContact: $gymContact,
+            gymName: $gym['name'],
+            gymEmail: $gym['email'],
+            gymContact: $gym['contact'],
+            memberName: $memberName,
             staffNote: $note,
             pdfBytes: $pdfBytes,
         );
 
-        if (filled($gymEmail)) {
-            $mailable->replyTo($gymEmail, $gymName);
+        if (filled($gym['email'])) {
+            $mailable->replyTo($gym['email'], $gym['name']);
         }
 
         Mail::to($toEmail)->send($mailable);
+    }
+
+    /**
+     * Validate an email address and log a warning when invalid.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function isValidRecipientEmail(string $toEmail, array $context): bool
+    {
+        if (filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return true;
+        }
+
+        Log::warning('Skipping invoice email: invalid recipient email.', [
+            ...$context,
+            'to_email' => $toEmail,
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Derive gym identity fields from settings.
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array{name: string, email: string, contact: string}
+     */
+    private function gymIdentityFromSettings(array $settings): array
+    {
+        return [
+            'name' => (string) data_get($settings, 'general.gym_name', config('app.name')),
+            'email' => (string) data_get($settings, 'general.gym_email', ''),
+            'contact' => (string) data_get($settings, 'general.gym_contact', ''),
+        ];
+    }
+
+    /**
+     * Build the common subject tokens used by invoice + receipt emails.
+     *
+     * @return array<string, string>
+     */
+    private function invoiceSubjectTokens(Invoice $invoice, string $gymName, string $memberName): array
+    {
+        return [
+            'invoice_number' => (string) ($invoice->number ?? ''),
+            'status' => $invoice->getDisplayStatusLabel(),
+            'total' => Helpers::formatCurrency((float) ($invoice->total_amount ?? 0)),
+            'paid' => Helpers::formatCurrency((float) ($invoice->paid_amount ?? 0)),
+            'due' => Helpers::formatCurrency((float) ($invoice->due_amount ?? 0)),
+            'gym_name' => $gymName,
+            'member_name' => $memberName,
+        ];
     }
 
     /**

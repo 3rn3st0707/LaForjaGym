@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Enums\Status;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subscription extends Model
@@ -37,10 +37,8 @@ class Subscription extends Model
 
     /**
      * Get the invoices for the subscription.
-     *
-     * @return hasMany
      */
-    public function invoices()
+    public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
@@ -67,20 +65,16 @@ class Subscription extends Model
 
     /**
      * The member who owns this subscription.
-     *
-     * @return BelongsTo
      */
-    public function member()
+    public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
     }
 
     /**
      * The plan this subscription is for.
-     *
-     * @return BelongsTo
      */
-    public function plan()
+    public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }

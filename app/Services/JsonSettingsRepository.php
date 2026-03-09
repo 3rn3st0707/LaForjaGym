@@ -8,7 +8,7 @@ use App\Contracts\SettingsRepository;
  * JSON-backed settings repository (OSS default).
  *
  * Settings are stored under `storage/data/settingsData.json`.
- * The platform/tenancy package can override this binding to store settings per-tenant.
+ * Other installations can override this binding to store settings elsewhere.
  */
 class JsonSettingsRepository implements SettingsRepository
 {
@@ -35,6 +35,18 @@ class JsonSettingsRepository implements SettingsRepository
             return $this->normalize(static::$testOverride);
         }
 
+        if (app()->runningUnitTests()) {
+            $exampleFilePath = storage_path(self::EXAMPLE_SETTINGS_PATH);
+
+            if (file_exists($exampleFilePath)) {
+                $settings = json_decode((string) file_get_contents($exampleFilePath), true) ?? [];
+
+                return $this->normalize($settings);
+            }
+
+            return $this->normalize([]);
+        }
+
         $filePath = storage_path(self::SETTINGS_PATH);
 
         if (! file_exists($filePath)) {
@@ -48,6 +60,12 @@ class JsonSettingsRepository implements SettingsRepository
 
     public function put(array $settings): void
     {
+        if (app()->runningUnitTests()) {
+            static::$testOverride = $this->normalize($settings);
+
+            return;
+        }
+
         $filePath = storage_path(self::SETTINGS_PATH);
 
         if (! file_exists(dirname($filePath))) {

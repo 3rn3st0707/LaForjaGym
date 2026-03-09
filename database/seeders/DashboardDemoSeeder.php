@@ -212,6 +212,8 @@ class DashboardDemoSeeder extends Seeder
         $timezone = config('app.timezone');
         $faker = fake();
         $staffUserId = User::query()->value('id');
+        $nextInvoiceNumber = $this->nextDemoInvoiceSequenceNumber();
+        $invoicePrefix = $this->demoInvoicePrefix();
 
         foreach ($subscriptions as $subscription) {
             $plan = $subscription->plan ?? $plans->random();
@@ -224,6 +226,7 @@ class DashboardDemoSeeder extends Seeder
             $discountAmount = $faker->boolean(35) ? round($grossFee * $faker->randomFloat(2, 0.02, 0.15), 2) : 0.0;
 
             $invoice = Invoice::query()->create([
+                'number' => "{$invoicePrefix}-{$nextInvoiceNumber}",
                 'subscription_id' => $subscription->id,
                 'date' => $invoiceDate->toDateString(),
                 'due_date' => $dueDate->toDateString(),
@@ -235,8 +238,40 @@ class DashboardDemoSeeder extends Seeder
                 'paid_amount' => 0,
             ]);
 
+            $nextInvoiceNumber++;
+
             $this->seedTransactionsForInvoice($invoice, $invoiceDate, $staffUserId);
         }
+    }
+
+    /**
+     * Get a stable invoice prefix for demo seeding.
+     */
+    private function demoInvoicePrefix(): string
+    {
+        $rawPrefix = (string) data_get(Helpers::getSettings(), 'invoice.prefix', '');
+        $prefix = trim($rawPrefix, '-');
+
+        return filled($prefix) ? $prefix : 'GY';
+    }
+
+    /**
+     * Determine the next numeric suffix to use for demo invoices.
+     */
+    private function nextDemoInvoiceSequenceNumber(): int
+    {
+        $max = Invoice::query()
+            ->pluck('number')
+            ->map(function (string $number): int {
+                if (preg_match('/(\\d+)$/', $number, $matches) !== 1) {
+                    return 0;
+                }
+
+                return (int) $matches[1];
+            })
+            ->max();
+
+        return ((int) $max) + 1;
     }
 
     /**

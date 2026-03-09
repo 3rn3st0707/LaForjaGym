@@ -200,8 +200,9 @@ class InvoiceTable
                                 Select::make('payment_method')
                                     ->label('Payment Method')
                                     ->options([
-                                        'cash' => 'Cash',
-                                        'cheque' => 'Cheque',
+                                        'cash' => 'Offline',
+                                        'online' => 'Online',
+                                        'cheque' => 'Cheque (legacy)',
                                     ])
                                     ->default(fn (Invoice $record): ?string => $record->payment_method ?: 'cash')
                                     ->nullable(),

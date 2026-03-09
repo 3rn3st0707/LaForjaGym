@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Status;
-use Illuminate\Database\Eloquent\Relations\hasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,7 +43,7 @@ class Enquiry extends Model
         'interested_in',
         'source',
         'goal',
-        'start_by'
+        'start_by',
     ];
 
     protected $casts = [
@@ -51,27 +51,23 @@ class Enquiry extends Model
         'date'          => 'date',
         'dob'           => 'date',
         'start_by'      => 'date',
-        'status'        => Status::class
+        'status'        => Status::class,
     ];
 
     protected $dates = ['deleted_at'];
 
     /**
      * Get the followUps for the enquiry.
-     *
-     * @return hasMany
      */
-    public function followUps()
+    public function followUps(): HasMany
     {
         return $this->hasMany(FollowUp::class);
     }
 
     /**
      * Get the user for the enquiry.
-     *
-     * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -79,11 +75,11 @@ class Enquiry extends Model
     /**
      * Boot the model and add cascade delete and restore behavior.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::deleting(function ($resource) {
+        static::deleting(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->get() as $item) {
                     $item->delete();
@@ -91,7 +87,7 @@ class Enquiry extends Model
             }
         });
 
-        static::restoring(function ($resource) {
+        static::restoring(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->withTrashed()->get() as $item) {
                     $item->restore();

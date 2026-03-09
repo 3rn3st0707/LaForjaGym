@@ -30,7 +30,7 @@ class InvoiceDocumentController extends Controller
 
         return response($pdfBytes, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$this->filename($invoice).'"',
+            'Content-Disposition' => 'inline; filename="'.InvoiceDocument::pdfFilename($invoice).'"',
         ]);
     }
 
@@ -53,18 +53,7 @@ class InvoiceDocumentController extends Controller
 
         return response($pdfBytes, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$this->filename($invoice).'"',
+            'Content-Disposition' => 'attachment; filename="'.InvoiceDocument::pdfFilename($invoice).'"',
         ]);
-    }
-
-    /**
-     * Create a safe invoice PDF filename.
-     */
-    private function filename(Invoice $invoice): string
-    {
-        $safeNumber = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $invoice->number);
-        $safeNumber = trim((string) $safeNumber, '-');
-
-        return filled($safeNumber) ? "invoice-{$safeNumber}.pdf" : 'invoice.pdf';
     }
 }

@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Enums\Status;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Plan extends Model
@@ -37,27 +37,23 @@ class Plan extends Model
     ];
 
     protected $casts = [
-        'status' => Status::class
+        'status' => Status::class,
     ];
 
     protected $dates = ['deleted_at'];
 
     /**
      * Get the sevice for the plan.
-     *
-     * @return BelongsTo
      */
-    public function service()
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
     }
 
     /**
      * Get the subscriptions for the plan.
-     *
-     * @return HasMany
      */
-    public function subscriptions()
+    public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
     }
@@ -65,11 +61,11 @@ class Plan extends Model
     /**
      * Boot the model and add cascade delete and restore behavior.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::deleting(function ($resource) {
+        static::deleting(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->get() as $item) {
                     $item->delete();
@@ -77,7 +73,7 @@ class Plan extends Model
             }
         });
 
-        static::restoring(function ($resource) {
+        static::restoring(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->withTrashed()->get() as $item) {
                     $item->restore();

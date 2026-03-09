@@ -37,20 +37,16 @@ class FollowUp extends Model
 
     /**
      * Get the enquiry for the follow-up.
-     *
-     * @return BelongsTo
      */
-    public function enquiry()
+    public function enquiry(): BelongsTo
     {
         return $this->belongsTo(Enquiry::class);
     }
 
     /**
      * Get the user for the follow-up.
-     *
-     * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

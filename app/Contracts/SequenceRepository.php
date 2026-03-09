@@ -5,9 +5,8 @@ namespace App\Contracts;
 /**
  * Sequence / number generation abstraction (e.g. Invoice / Member numbers).
  *
- * OSS default uses JSON-backed settings, while the platform/tenancy
- * implementation can override this binding to generate sequences per-tenant
- * safely (e.g. with row locks).
+ * OSS default uses JSON-backed settings. Other installations can override this
+ * binding to generate sequences safely (for example, using row locks).
  */
 interface SequenceRepository
 {

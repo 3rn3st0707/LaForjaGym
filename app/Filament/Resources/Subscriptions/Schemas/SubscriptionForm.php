@@ -23,14 +23,14 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SubscriptionForm
 {
     private const PAYMENT_METHOD_OPTIONS = [
-        'cash' => 'Cash',
-        'cheque' => 'Cheque',
+        'cash' => 'Offline',
+        'online' => 'Online',
+        'cheque' => 'Cheque (legacy)',
     ];
 
     /**
@@ -209,6 +209,7 @@ class SubscriptionForm
                                                 ->debounce(300)
                                                 ->default(0)
                                                 ->prefix(Helpers::getCurrencySymbol())
+                                                ->visible(fn (Get $get): bool => strtolower(trim((string) ($get('payment_method') ?? ''))) !== 'online')
                                                 ->afterStateUpdated(function (Get $get, Set $set, $livewire, TextInput $component) {
                                                     $livewire->validateOnly($component->getStatePath());
                                                     self::recalculateInvoiceSummary($get, $set);
@@ -219,6 +220,14 @@ class SubscriptionForm
                                                 ->default('cash')
                                                 ->inline()
                                                 ->inlineLabel(false)
+                                                ->reactive()
+                                                ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                                                    if ($state === 'online') {
+                                                        $set('paid_amount', 0);
+                                                    }
+
+                                                    self::recalculateInvoiceSummary($get, $set);
+                                                })
                                                 ->required(),
                                         ]),
                                     Fieldset::make('Summary')
@@ -411,6 +420,7 @@ class SubscriptionForm
                                 ->debounce(300)
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol())
+                                ->visible(fn (Get $get): bool => strtolower(trim((string) ($get('payment_method') ?? ''))) !== 'online')
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
@@ -420,6 +430,14 @@ class SubscriptionForm
                                 ->default('cash')
                                 ->inline()
                                 ->inlineLabel(false)
+                                ->reactive()
+                                ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                                    if ($state === 'online') {
+                                        $set('paid_amount', 0);
+                                    }
+
+                                    self::recalculateRenewInvoiceSummary($get, $set);
+                                })
                                 ->required(),
                         ])->columnSpan(5),
                     Fieldset::make('Summary')
@@ -470,11 +488,11 @@ class SubscriptionForm
      * @param array $data The form data for the new subscription and invoice
      * @return void
      */
-    public static function handleRenew(Subscription $record, array $data): void
-    {
-        DB::transaction(function () use ($record, $data): void {
-            $timezone = config('app.timezone');
-            $today = Carbon::today($timezone);
+	    public static function handleRenew(Subscription $record, array $data): void
+	    {
+	        Subscription::query()->getConnection()->transaction(function () use ($record, $data): void {
+	            $timezone = config('app.timezone');
+	            $today = Carbon::today($timezone);
 
             $plan = Plan::findOrFail((int) $data['plan_id']);
             $startDate = Carbon::parse($data['start_date'])->toDateString();
@@ -507,17 +525,21 @@ class SubscriptionForm
                 $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
             }
 
-            $paidAmount = max((float) ($data['paid_amount'] ?? 0), 0);
+	            $paymentMethod = $data['payment_method'] ?? null;
+	            $paidAmount = max((float) ($data['paid_amount'] ?? 0), 0);
+	            if ($paymentMethod === 'online') {
+	                $paidAmount = 0;
+	            }
 
             $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
             $invoiceDueDate = Carbon::parse($data['invoice_due_date'] ?? $invoiceDate)->toDateString();
 
-            $invoice = Invoice::create([
+	            $invoice = Invoice::create([
                 'number' => $data['invoice_number'] ?? null,
                 'subscription_id' => $newSubscription->id,
                 'date' => $invoiceDate,
                 'due_date' => $invoiceDueDate,
-                'payment_method' => $data['payment_method'] ?? null,
+	                'payment_method' => $paymentMethod,
                 'discount' => $discountPct ?: null,
                 'discount_amount' => $discountAmount ?: null,
                 'discount_note' => $data['discount_note'] ?? null,
@@ -531,8 +553,8 @@ class SubscriptionForm
                 ->body("New subscription created and invoice {$invoice->number} generated.")
                 ->success()
                 ->send();
-        });
-    }
+	        });
+	    }
 
     /**
      * Recalculate invoice summary fields (subscription_fee, tax, total_amount, due_amount) based on the selected plan and discount.
@@ -559,18 +581,22 @@ class SubscriptionForm
      * @param float|null $tax Optional tax amount to use for calculations (if null, will use current form state)
      * @return void
      */
-    private static function recalculateInvoiceSummary(Get $get, Set $set, ?float $fee = null, ?float $tax = null): void
-    {
-        $fee = $fee ?? (float) ($get('subscription_fee') ?? 0);
-        $tax = $tax ?? (float) ($get('tax') ?? 0);
+	    private static function recalculateInvoiceSummary(Get $get, Set $set, ?float $fee = null, ?float $tax = null): void
+	    {
+	        $fee = $fee ?? (float) ($get('subscription_fee') ?? 0);
+	        $tax = $tax ?? (float) ($get('tax') ?? 0);
 
         $discountAmount = (float) ($get('discount_amount') ?? 0);
         $discountAmount = min(max($discountAmount, 0), $fee);
 
-        $total = round(max($fee + $tax - $discountAmount, 0));
+	        $total = round(max($fee + $tax - $discountAmount, 0));
 
-        $paid = (float) ($get('paid_amount') ?? 0);
-        $paid = min(max($paid, 0), $total);
+	        $paid = (float) ($get('paid_amount') ?? 0);
+	        $paymentMethod = strtolower(trim((string) ($get('payment_method') ?? '')));
+	        if ($paymentMethod === 'online') {
+	            $paid = 0;
+	        }
+	        $paid = min(max($paid, 0), $total);
 
         $due = round(max($total - $paid, 0));
 

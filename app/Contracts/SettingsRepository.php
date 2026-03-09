@@ -5,8 +5,8 @@ namespace App\Contracts;
 /**
  * Settings persistence abstraction.
  *
- * OSS default uses JSON storage, while the platform/tenancy implementation
- * can override this binding to store settings per-tenant in the database.
+ * OSS default uses JSON storage. Other installations can override this binding
+ * to store settings elsewhere (for example, in a database).
  */
 interface SettingsRepository
 {

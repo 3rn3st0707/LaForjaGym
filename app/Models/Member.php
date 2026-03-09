@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\Status;
 use App\Helpers\Helpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Member extends Model
@@ -66,10 +66,8 @@ class Member extends Model
 
     /**
      * Get the subscriptions for the member.
-     *
-     * @return HasMany
      */
-    public function subscriptions()
+    public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
     }
@@ -77,18 +75,18 @@ class Member extends Model
     /**
      * Boot the model and add cascade delete and restore behavior.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::saving(function ($member) {
-            if (!$member->code) {
+        static::saving(function (self $member): void {
+            if (! $member->code) {
                 $member->code = Helpers::generateLastNumber('member', Member::class, null, 'code');
             }
             Helpers::updateLastNumber('member', $member->code);
         });
 
-        static::deleting(function ($resource) {
+        static::deleting(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->get() as $item) {
                     $item->delete();
@@ -96,7 +94,7 @@ class Member extends Model
             }
         });
 
-        static::restoring(function ($resource) {
+        static::restoring(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->withTrashed()->get() as $item) {
                     $item->restore();

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Contracts\SettingsRepository;
 use App\Helpers\Helpers;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
@@ -23,7 +24,6 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use RuntimeException;
 
 class Settings extends Page implements HasForms
 {
@@ -79,10 +79,8 @@ class Settings extends Page implements HasForms
 
     /**
      * General Tab Schema.
-     *
-     * @return Forms\Components\Tabs\Tab
      */
-    private function generalTab()
+    private function generalTab(): Tab
     {
         return Tab::make('Gym Info')
             ->icon('heroicon-m-briefcase')
@@ -180,10 +178,8 @@ class Settings extends Page implements HasForms
 
     /**
      * Invoice Tab Schema.
-     *
-     * @return Forms\Components\Tabs\Tab
      */
-    private function invoiceTab()
+    private function invoiceTab(): Tab
     {
         return
             Tab::make('Invoice')->icon('heroicon-m-document-text')
@@ -205,7 +201,7 @@ class Settings extends Page implements HasForms
                                     'gym_logo' => 'Gym Logo',
                                 ]),
                         ]),
-                    Section::make('Email')
+                    Fieldset::make('Email')
                         ->columns(['default' => 1, 'md' => 5])
                         ->schema([
                             Group::make()
@@ -219,28 +215,31 @@ class Settings extends Page implements HasForms
                                         ->placeholder('Payment received - {invoice_number}')
                                         ->helperText('Tokens: {invoice_number}, {status}, {total}, {paid}, {due}, {gym_name}, {member_name}, {payment_amount}'),
                                 ])->columnSpan(['default' => 1, 'md' => 3]),
-                            Fieldset::make('Settings')
+                            Group::make()
                                 ->schema([
                                     Toggle::make('notifications.email.enabled')
                                         ->label('Enable invoice emails')
-                                        ->default(false),
+                                        ->default(false)
+                                        ->inlineLabel(),
                                     Toggle::make('notifications.email.auto_send_invoice_issued')
                                         ->label('Auto-send invoice email when issued')
-                                        ->default(false),
+                                        ->default(false)
+                                        ->inlineLabel(),
                                     Toggle::make('notifications.email.auto_send_payment_receipt')
                                         ->label('Auto-send payment receipt email')
-                                        ->default(false),
-                                ])->columns(1)->columnSpan(['default' => 1, 'md' => 2]),
+                                        ->default(false)
+                                        ->inlineLabel(),
+                                ])
+                                ->columns(1)
+                                ->columnSpan(['default' => 1, 'md' => 2]),
                         ]),
                 ]);
     }
 
     /**
      * Member Tab Schema.
-     *
-     * @return Forms\Components\Tabs\Tab
      */
-    private function memberTab()
+    private function memberTab(): Tab
     {
         return
             Tab::make('Member')->icon('heroicon-m-user-group')
@@ -260,10 +259,8 @@ class Settings extends Page implements HasForms
 
     /**
      * Charges Tab Schema.
-     *
-     * @return Forms\Components\Tabs\Tab
      */
-    private function chargesTab()
+    private function chargesTab(): Tab
     {
         return
             Tab::make('Charges')->icon('heroicon-m-currency-rupee')
@@ -289,7 +286,7 @@ class Settings extends Page implements HasForms
     /**
      * Expenses Tab Schema.
      */
-    private function expensesTab()
+    private function expensesTab(): Tab
     {
         return
             Tab::make('Expenses')->icon('heroicon-m-banknotes')
@@ -305,7 +302,7 @@ class Settings extends Page implements HasForms
     /**
      * Subscriptions Tab Schema.
      */
-    private function subscriptionsTab()
+    private function subscriptionsTab(): Tab
     {
         return
             Tab::make('Subscriptions')->icon('heroicon-m-ticket')
@@ -333,29 +330,44 @@ class Settings extends Page implements HasForms
     }
 
     /**
-     * Saves settings to JSON file.
+     * Persist the current settings.
      */
-    public function save()
+    public function save(): void
     {
-        $path = storage_path('data/settingsData.json');
+        $settings = $this->data ?? [];
 
-        // Ensure directory exists
-        if (! file_exists(dirname($path))) {
-            mkdir(dirname($path), 0755, true);
-        }
-
-        if (! empty($this->data['general']['financial_year_start'])) {
-            $this->data['general']['financial_year_start'] =
-                Carbon::parse($this->data['general']['financial_year_start'])
+        if (! empty($settings['general']['financial_year_start'])) {
+            $settings['general']['financial_year_start'] =
+                Carbon::parse($settings['general']['financial_year_start'])
                     ->toDateString();
         }
-        if (! empty($this->data['general']['financial_year_end'])) {
-            $this->data['general']['financial_year_end'] =
-                Carbon::parse($this->data['general']['financial_year_end'])
+        if (! empty($settings['general']['financial_year_end'])) {
+            $settings['general']['financial_year_end'] =
+                Carbon::parse($settings['general']['financial_year_end'])
                     ->toDateString();
         }
 
-        file_put_contents($path, json_encode($this->data, JSON_PRETTY_PRINT));
+        foreach (['gym_logo'] as $logoKey) {
+            $value = $settings['general'][$logoKey] ?? null;
+            if (is_array($value)) {
+                $settings['general'][$logoKey] = $value[0] ?? null;
+            }
+        }
+
+        try {
+            app(SettingsRepository::class)->put($settings);
+            $this->data = $settings;
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            Notification::make()
+                ->title('Failed')
+                ->body('Unable to save settings. Please try again.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title('Success')
@@ -371,24 +383,20 @@ class Settings extends Page implements HasForms
      * @param  string  $key  The key to store the uploaded file path in the settings.
      * @param  callable  $set  The callback to update the form state.
      */
-    private function handleFileUpload($state, string $key, callable $set)
+    private function handleFileUpload(mixed $state, string $key, callable $set): void
     {
         if (! $state instanceof TemporaryUploadedFile) {
             return;
         }
 
         $path = $state->storeAs('images', $state->getClientOriginalName(), 'public');
-        $jsonPath = storage_path('data/settingsData.json');
-        $jsonData = Helpers::getSettings();
+        $repository = app(SettingsRepository::class);
+        $settings = $repository->get();
 
-        // Ensure 'general' and its key exist as an array
-        $jsonData['general'] = $jsonData['general'] ?? [];
-        $jsonData['general'][$key] = $path;
+        $settings['general'] = $settings['general'] ?? [];
+        $settings['general'][$key] = $path;
 
-        // Save updated data
-        if (file_put_contents($jsonPath, json_encode($jsonData, JSON_PRETTY_PRINT)) === false) {
-            throw new RuntimeException('Failed to write to settings file.');
-        }
+        $repository->put($settings);
 
         // Update the form state
         $set("general.$key", [$path]);

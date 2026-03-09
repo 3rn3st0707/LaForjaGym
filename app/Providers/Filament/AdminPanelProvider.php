@@ -33,7 +33,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
- * Filament panel provider for the main (tenant) admin panel.
+ * Filament panel provider for the main admin panel.
  *
  * This app is intentionally single-tenant.
  */
@@ -49,9 +49,7 @@ class AdminPanelProvider extends PanelProvider
     }
 
     /**
-     * Configure the base panel options that are common to both OSS + platform.
-     *
-     * This app does not ship any tenancy concerns.
+     * Configure the base panel options.
      */
     public function basePanel(Panel $panel): Panel
     {

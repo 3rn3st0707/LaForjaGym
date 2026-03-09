@@ -115,6 +115,17 @@ final class InvoiceDocument
     }
 
     /**
+     * Create a safe, human-friendly PDF filename for an invoice.
+     */
+    public static function pdfFilename(Invoice $invoice): string
+    {
+        $safeNumber = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $invoice->number);
+        $safeNumber = trim((string) $safeNumber, '-');
+
+        return filled($safeNumber) ? "invoice-{$safeNumber}.pdf" : 'invoice.pdf';
+    }
+
+    /**
      * Resolve the configured gym logo into a data URI (best for PDF rendering).
      *
      * @param  array<string, mixed>  $settings

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\hasMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -33,10 +33,8 @@ class Service extends Model
 
     /**
      * Get the plans for the service.
-     *
-     * @return hasMany
      */
-    public function plans()
+    public function plans(): HasMany
     {
         return $this->hasMany(Plan::class);
     }
@@ -44,11 +42,11 @@ class Service extends Model
     /**
      * Boot the model and add cascade delete and restore behavior.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::deleting(function ($resource) {
+        static::deleting(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->get() as $item) {
                     $item->delete();
@@ -56,7 +54,7 @@ class Service extends Model
             }
         });
 
-        static::restoring(function ($resource) {
+        static::restoring(function (self $resource): void {
             foreach (static::$relations_to_cascade as $relation) {
                 foreach ($resource->{$relation}()->withTrashed()->get() as $item) {
                     $item->restore();

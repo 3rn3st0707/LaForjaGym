@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Invoice;
+use App\Support\Invoices\InvoiceDocument;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
@@ -71,12 +72,8 @@ class InvoiceIssuedMail extends Mailable
      */
     public function attachments(): array
     {
-        $safeNumber = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $this->invoice->number);
-        $safeNumber = trim((string) $safeNumber, '-');
-        $filename = filled($safeNumber) ? "invoice-{$safeNumber}.pdf" : 'invoice.pdf';
-
         return [
-            Attachment::fromData(fn () => $this->pdfBytes, $filename)
+            Attachment::fromData(fn () => $this->pdfBytes, InvoiceDocument::pdfFilename($this->invoice))
                 ->withMime('application/pdf'),
         ];
     }

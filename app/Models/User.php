@@ -8,7 +8,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\hasMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -39,7 +39,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'city',
         'state',
         'pincode',
-
     ];
 
     /**
@@ -71,20 +70,16 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     /**
      * Get the followUps for the user.
-     *
-     * @return hasMany
      */
-    public function followUps()
+    public function followUps(): HasMany
     {
         return $this->hasMany(FollowUp::class);
     }
 
     /**
      * Get the enquiries for the user.
-     *
-     * @return hasMany
      */
-    public function enquiries()
+    public function enquiries(): HasMany
     {
         return $this->hasMany(Enquiry::class);
     }
