@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Status;
 use App\Helpers\Helpers;
+use App\Models\Concerns\CascadesSoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,15 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Member extends Model
 {
-    use HasFactory, SoftDeletes;
-
-    /**
-     * Holds the methods' names of Eloquent Relations
-     * to fall on delete cascade or on restoring
-     *
-     * @var string[]
-     */
-    protected static $relations_to_cascade = ['subscriptions'];
+    use CascadesSoftDeletes, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -85,21 +78,15 @@ class Member extends Model
             }
             Helpers::updateLastNumber('member', $member->code);
         });
+    }
 
-        static::deleting(function (self $resource): void {
-            foreach (static::$relations_to_cascade as $relation) {
-                foreach ($resource->{$relation}()->get() as $item) {
-                    $item->delete();
-                }
-            }
-        });
-
-        static::restoring(function (self $resource): void {
-            foreach (static::$relations_to_cascade as $relation) {
-                foreach ($resource->{$relation}()->withTrashed()->get() as $item) {
-                    $item->restore();
-                }
-            }
-        });
+    /**
+     * Relationship method names to cascade when deleting/restoring.
+     *
+     * @return list<string>
+     */
+    protected static function relationsToCascade(): array
+    {
+        return ['subscriptions'];
     }
 }

@@ -2,42 +2,45 @@
 
 namespace App\Filament\Resources\Subscriptions\Schemas;
 
+use App\Filament\Resources\Members\Pages\CreateMember;
+use App\Filament\Resources\Members\RelationManagers\SubscriptionsRelationManager;
 use App\Helpers\Helpers;
+use App\Models\Invoice;
+use App\Models\Member;
+use App\Models\Plan;
 use App\Models\Subscription;
-use Filament\Schemas\Schema;
+use App\Support\Billing\InvoiceCalculator;
+use App\Support\Billing\PaymentMethod;
+use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use App\Filament\Resources\Members\Pages\CreateMember;
-use App\Filament\Resources\Members\RelationManagers\SubscriptionsRelationManager;
-use App\Models\Invoice;
-use App\Models\Member;
-use App\Models\Plan;
-use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
-use Filament\Notifications\Notification;
+use Filament\Schemas\Schema;
 use Illuminate\Validation\Rule;
 
 class SubscriptionForm
 {
-    private const PAYMENT_METHOD_OPTIONS = [
-        'cash' => 'Offline',
-        'online' => 'Online',
-        'cheque' => 'Cheque (legacy)',
-    ];
+    /**
+     * Default payment method options for forms.
+     *
+     * @return array<string, string>
+     */
+    private static function paymentMethodOptions(): array
+    {
+        return PaymentMethod::options();
+    }
 
     /**
      * Configure the subscription form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -52,11 +55,11 @@ class SubscriptionForm
                             ->columnSpan(2)
                             ->relationship('member', 'name')
                             ->placeholder('Select a member')
-                            ->getOptionLabelFromRecordUsing(fn(Member $record): string => "{$record->code} - {$record->name}")
+                            ->getOptionLabelFromRecordUsing(fn (Member $record): string => "{$record->code} - {$record->name}")
                             ->hiddenOn([SubscriptionsRelationManager::class, CreateMember::class])
                             ->required(),
                         Select::make('plan_id')
-                            ->columnSpan(fn($livewire) => ($livewire instanceof SubscriptionsRelationManager ||
+                            ->columnSpan(fn ($livewire) => ($livewire instanceof SubscriptionsRelationManager ||
                                 $livewire instanceof CreateMember)
                                 ? 4
                                 : 2)
@@ -64,27 +67,32 @@ class SubscriptionForm
                             ->placeholder('Select a plan')
                             ->searchable(['code', 'name'])
                             ->reactive()
-                            ->getOptionLabelFromRecordUsing(fn(Plan $record): string => self::formatPlanOptionLabel($record))
+                            ->getOptionLabelFromRecordUsing(fn (Plan $record): string => self::formatPlanOptionLabel($record))
                             ->afterStateUpdated(function (Get $get, Set $set) {
-                                $plan    = Plan::find($get('plan_id'));
-                                $fee     = round($plan->amount ?? 0);
+                                $plan = Plan::find($get('plan_id'));
+                                $fee = (float) ($plan?->amount ?? 0);
                                 $taxRate = Helpers::getTaxRate() ?: 0;
-                                $tax     = round(($fee * $taxRate) / 100);
 
                                 // grab current invoices array (if any)
                                 $invoices = $get('invoices') ?? [];
 
                                 foreach ($invoices as $index => $invoice) {
-                                    $discount = $invoice['discount_amount'] ?? 0;
-                                    $paid     = $invoice['paid_amount']     ?? 0;
-                                    $total    = round($fee + $tax - $discount);
-                                    $due      = round(max($total - $paid, 0));
+                                    $discount = (float) ($invoice['discount_amount'] ?? 0);
+                                    $paid = (float) ($invoice['paid_amount'] ?? 0);
+
+                                    $summary = InvoiceCalculator::summary(
+                                        $fee,
+                                        $taxRate,
+                                        $discount,
+                                        $paid,
+                                    );
 
                                     // set each nested invoice field
-                                    $set("invoices.{$index}.subscription_fee", $fee);
-                                    $set("invoices.{$index}.tax",              $tax);
-                                    $set("invoices.{$index}.total_amount",     $total);
-                                    $set("invoices.{$index}.due_amount",       $due);
+                                    $set("invoices.{$index}.subscription_fee", $summary['fee']);
+                                    $set("invoices.{$index}.tax", $summary['tax']);
+                                    $set("invoices.{$index}.total_amount", $summary['total']);
+                                    $set("invoices.{$index}.paid_amount", $summary['paid']);
+                                    $set("invoices.{$index}.due_amount", $summary['due']);
                                 }
 
                                 $set('end_date', Helpers::calculateSubscriptionEndDate(
@@ -150,7 +158,7 @@ class SubscriptionForm
                                                 ->disabled()
                                                 ->dehydrated()
                                                 ->rule(Rule::unique('invoices', 'number'))
-                                                ->default(fn(Get $get) => Helpers::generateLastNumber(
+                                                ->default(fn (Get $get) => Helpers::generateLastNumber(
                                                     'invoice',
                                                     Invoice::class,
                                                     $get('date')
@@ -172,8 +180,8 @@ class SubscriptionForm
                                                 ->placeholder('Select Discount')
                                                 ->afterStateUpdated(
                                                     function (Get $get, Set $set) {
-                                                        $fee           = $get('subscription_fee') ?: 0;
-                                                        $discountPct   = (int) $get('discount');
+                                                        $fee = $get('subscription_fee') ?: 0;
+                                                        $discountPct = (int) $get('discount');
                                                         $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
 
                                                         $set('discount_amount', round($discountAmount));
@@ -186,14 +194,14 @@ class SubscriptionForm
                                                 ->debounce(300)
                                                 ->default(0)
                                                 ->prefix(Helpers::getCurrencySymbol())
-                                                ->maxValue(fn(Get $get): float => $get('subscription_fee') ?: 0)
+                                                ->maxValue(fn (Get $get): float => $get('subscription_fee') ?: 0)
                                                 ->afterStateUpdated(
                                                     function (Get $get, Set $set, $livewire, TextInput $component) {
                                                         $livewire->validateOnly($component->getStatePath());
 
-                                                        $fee            = $get('subscription_fee') ?: 0;
-                                                        $entered        = $get('discount_amount') ?: 0;
-                                                        $clamped        = min(max($entered, 0), $fee);
+                                                        $fee = $get('subscription_fee') ?: 0;
+                                                        $entered = $get('discount_amount') ?: 0;
+                                                        $clamped = min(max($entered, 0), $fee);
                                                         $set('discount_amount', $clamped);
 
                                                         self::recalculateInvoiceSummary($get, $set);
@@ -209,20 +217,20 @@ class SubscriptionForm
                                                 ->debounce(300)
                                                 ->default(0)
                                                 ->prefix(Helpers::getCurrencySymbol())
-                                                ->visible(fn (Get $get): bool => strtolower(trim((string) ($get('payment_method') ?? ''))) !== 'online')
+                                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline((string) ($get('payment_method') ?? null)))
                                                 ->afterStateUpdated(function (Get $get, Set $set, $livewire, TextInput $component) {
                                                     $livewire->validateOnly($component->getStatePath());
                                                     self::recalculateInvoiceSummary($get, $set);
                                                 }),
                                             Radio::make('payment_method')
                                                 ->label('Payment Method')
-                                                ->options(self::PAYMENT_METHOD_OPTIONS)
+                                                ->options(self::paymentMethodOptions())
                                                 ->default('cash')
                                                 ->inline()
                                                 ->inlineLabel(false)
                                                 ->reactive()
                                                 ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
-                                                    if ($state === 'online') {
+                                                    if (PaymentMethod::isOnline($state)) {
                                                         $set('paid_amount', 0);
                                                     }
 
@@ -244,7 +252,7 @@ class SubscriptionForm
                                                 ->prefix(Helpers::getCurrencySymbol())
                                                 ->required(),
                                             TextInput::make('tax')
-                                                ->label('Tax (' . Helpers::getTaxRate() . '%)')
+                                                ->label('Tax ('.Helpers::getTaxRate().'%)')
                                                 ->numeric()
                                                 ->disabled()
                                                 ->dehydrated()
@@ -271,7 +279,7 @@ class SubscriptionForm
                                         ]),
                                 ]),
                         ]
-                    )
+                    ),
             ]);
     }
 
@@ -289,10 +297,10 @@ class SubscriptionForm
                 ->schema([
                     Select::make('plan_id')
                         ->label('Plan')
-                        ->options(fn(): array => Plan::query()
+                        ->options(fn (): array => Plan::query()
                             ->orderBy('name')
                             ->get()
-                            ->mapWithKeys(fn(Plan $plan): array => [
+                            ->mapWithKeys(fn (Plan $plan): array => [
                                 $plan->id => self::formatPlanOptionLabel($plan),
                             ])
                             ->all())
@@ -336,7 +344,7 @@ class SubscriptionForm
                         ->suffixIcon('heroicon-m-calendar-days')
                         ->disabled()
                         ->dehydrated()
-                        ->default(fn(Get $get): string => Helpers::calculateSubscriptionEndDate(
+                        ->default(fn (Get $get): string => Helpers::calculateSubscriptionEndDate(
                             $get('start_date'),
                             $get('plan_id'),
                         ))
@@ -355,7 +363,7 @@ class SubscriptionForm
                                 ->disabled()
                                 ->dehydrated()
                                 ->rule(Rule::unique('invoices', 'number'))
-                                ->default(fn(Get $get) => Helpers::generateLastNumber(
+                                ->default(fn (Get $get) => Helpers::generateLastNumber(
                                     'invoice',
                                     Invoice::class,
                                     $get('invoice_date'),
@@ -403,7 +411,7 @@ class SubscriptionForm
                                 ->label('Discount Amount')
                                 ->numeric()
                                 ->minValue(0)
-                                ->maxValue(fn(Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
+                                ->maxValue(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
                                 ->debounce(300)
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol())
@@ -420,19 +428,19 @@ class SubscriptionForm
                                 ->debounce(300)
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol())
-                                ->visible(fn (Get $get): bool => strtolower(trim((string) ($get('payment_method') ?? ''))) !== 'online')
+                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline((string) ($get('payment_method') ?? null)))
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
                             Radio::make('payment_method')
                                 ->label('Payment Method')
-                                ->options(self::PAYMENT_METHOD_OPTIONS)
+                                ->options(self::paymentMethodOptions())
                                 ->default('cash')
                                 ->inline()
                                 ->inlineLabel(false)
                                 ->reactive()
                                 ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
-                                    if ($state === 'online') {
+                                    if (PaymentMethod::isOnline($state)) {
                                         $set('paid_amount', 0);
                                     }
 
@@ -450,10 +458,10 @@ class SubscriptionForm
                                 ->readOnly()
                                 ->disabled()
                                 ->dehydrated()
-                                ->default(fn(Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
+                                ->default(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
                                 ->prefix(Helpers::getCurrencySymbol()),
                             TextInput::make('tax')
-                                ->label('Tax (' . Helpers::getTaxRate() . '%)')
+                                ->label('Tax ('.Helpers::getTaxRate().'%)')
                                 ->numeric()
                                 ->readOnly()
                                 ->disabled()
@@ -484,15 +492,14 @@ class SubscriptionForm
     /**
      * Handle the subscription renewal process, including creating a new subscription and associated invoice.
      *
-     * @param Subscription $record The subscription being renewed
-     * @param array $data The form data for the new subscription and invoice
-     * @return void
+     * @param  Subscription  $record  The subscription being renewed
+     * @param  array  $data  The form data for the new subscription and invoice
      */
-	    public static function handleRenew(Subscription $record, array $data): void
-	    {
-	        Subscription::query()->getConnection()->transaction(function () use ($record, $data): void {
-	            $timezone = config('app.timezone');
-	            $today = Carbon::today($timezone);
+    public static function handleRenew(Subscription $record, array $data): void
+    {
+        Subscription::query()->getConnection()->transaction(function () use ($record, $data): void {
+            $timezone = config('app.timezone');
+            $today = Carbon::today($timezone);
 
             $plan = Plan::findOrFail((int) $data['plan_id']);
             $startDate = Carbon::parse($data['start_date'])->toDateString();
@@ -525,21 +532,21 @@ class SubscriptionForm
                 $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
             }
 
-	            $paymentMethod = $data['payment_method'] ?? null;
-	            $paidAmount = max((float) ($data['paid_amount'] ?? 0), 0);
-	            if ($paymentMethod === 'online') {
-	                $paidAmount = 0;
-	            }
+            $paymentMethod = $data['payment_method'] ?? null;
+            $paidAmount = max((float) ($data['paid_amount'] ?? 0), 0);
+            if (PaymentMethod::isOnline($paymentMethod)) {
+                $paidAmount = 0;
+            }
 
             $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
             $invoiceDueDate = Carbon::parse($data['invoice_due_date'] ?? $invoiceDate)->toDateString();
 
-	            $invoice = Invoice::create([
+            $invoice = Invoice::create([
                 'number' => $data['invoice_number'] ?? null,
                 'subscription_id' => $newSubscription->id,
                 'date' => $invoiceDate,
                 'due_date' => $invoiceDueDate,
-	                'payment_method' => $paymentMethod,
+                'payment_method' => $paymentMethod,
                 'discount' => $discountPct ?: null,
                 'discount_amount' => $discountAmount ?: null,
                 'discount_note' => $data['discount_note'] ?? null,
@@ -553,66 +560,54 @@ class SubscriptionForm
                 ->body("New subscription created and invoice {$invoice->number} generated.")
                 ->success()
                 ->send();
-	        });
-	    }
+        });
+    }
 
     /**
      * Recalculate invoice summary fields (subscription_fee, tax, total_amount, due_amount) based on the selected plan and discount.
-     *
-     * @param Get $get
-     * @param Set $set
-     * @return void
      */
     private static function recalculateRenewInvoiceSummary(Get $get, Set $set): void
     {
         $plan = $get('plan_id') ? Plan::find($get('plan_id')) : null;
-        $fee = round($plan?->amount ?? 0);
+        $fee = (float) ($plan?->amount ?? 0);
         $taxRate = Helpers::getTaxRate() ?: 0;
-        $tax = round(($fee * $taxRate) / 100);
-        self::recalculateInvoiceSummary($get, $set, $fee, $tax);
+
+        self::recalculateInvoiceSummary($get, $set, $fee, $taxRate);
     }
 
     /**
-     * Recalculate invoice summary fields (subscription_fee, tax, total_amount, due_amount) based on the provided fee and tax or current form state.
-     *
-     * @param Get $get
-     * @param Set $set
-     * @param float|null $fee Optional subscription fee to use for calculations (if null, will use current form state)
-     * @param float|null $tax Optional tax amount to use for calculations (if null, will use current form state)
-     * @return void
+     * Recalculate invoice summary fields (subscription_fee, tax, total_amount, due_amount).
      */
-	    private static function recalculateInvoiceSummary(Get $get, Set $set, ?float $fee = null, ?float $tax = null): void
-	    {
-	        $fee = $fee ?? (float) ($get('subscription_fee') ?? 0);
-	        $tax = $tax ?? (float) ($get('tax') ?? 0);
+    private static function recalculateInvoiceSummary(Get $get, Set $set, ?float $fee = null, ?float $taxRate = null): void
+    {
+        $fee = $fee ?? (float) ($get('subscription_fee') ?? 0);
+        $taxRate = $taxRate ?? (float) (Helpers::getTaxRate() ?: 0);
 
         $discountAmount = (float) ($get('discount_amount') ?? 0);
-        $discountAmount = min(max($discountAmount, 0), $fee);
+        $paid = (float) ($get('paid_amount') ?? 0);
 
-	        $total = round(max($fee + $tax - $discountAmount, 0));
+        $paymentMethod = (string) ($get('payment_method') ?? null);
+        if (PaymentMethod::isOnline($paymentMethod)) {
+            $paid = 0;
+        }
 
-	        $paid = (float) ($get('paid_amount') ?? 0);
-	        $paymentMethod = strtolower(trim((string) ($get('payment_method') ?? '')));
-	        if ($paymentMethod === 'online') {
-	            $paid = 0;
-	        }
-	        $paid = min(max($paid, 0), $total);
+        $summary = InvoiceCalculator::summary(
+            $fee,
+            $taxRate,
+            $discountAmount,
+            $paid,
+        );
 
-        $due = round(max($total - $paid, 0));
-
-        $set('subscription_fee', $fee);
-        $set('tax', $tax);
-        $set('discount_amount', $discountAmount);
-        $set('total_amount', $total);
-        $set('paid_amount', $paid);
-        $set('due_amount', $due);
+        $set('subscription_fee', $summary['fee']);
+        $set('tax', $summary['tax']);
+        $set('discount_amount', $summary['discount_amount']);
+        $set('total_amount', $summary['total']);
+        $set('paid_amount', $summary['paid']);
+        $set('due_amount', $summary['due']);
     }
 
     /**
      * Format the plan option label for the select input.
-     *
-     * @param Plan $plan
-     * @return string
      */
     private static function formatPlanOptionLabel(Plan $plan): string
     {

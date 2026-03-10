@@ -2,30 +2,29 @@
 
 namespace App\Filament\Resources\Invoices\Schemas;
 
+use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager;
+use App\Helpers\Helpers;
 use App\Models\Invoice;
 use App\Models\Subscription;
-use App\Helpers\Helpers;
-use Filament\Schemas\Schema;
+use App\Support\Billing\InvoiceCalculator;
+use App\Support\Billing\PaymentMethod;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
 class InvoiceForm
 {
     /**
      * Configure the follow-up form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -46,7 +45,7 @@ class InvoiceForm
                                     ->readOnly()
                                     ->disabled()
                                     ->dehydrated()
-                                    ->default(fn(Get $get) => Helpers::generateLastNumber(
+                                    ->default(fn (Get $get) => Helpers::generateLastNumber(
                                         'invoice',
                                         Invoice::class,
                                         $get('date')
@@ -57,12 +56,12 @@ class InvoiceForm
                                     ->relationship(
                                         name: 'subscription',
                                         titleAttribute: 'id',
-                                        modifyQueryUsing: fn(Builder $query) => $query
+                                        modifyQueryUsing: fn (Builder $query) => $query
                                             ->with(['member', 'plan'])
                                             ->orderByDesc('start_date'),
                                     )
                                     ->hiddenOn(InvoicesRelationManager::class)
-                                    ->getOptionLabelFromRecordUsing(fn(Subscription $record): string => self::formatSubscriptionOptionLabel($record))
+                                    ->getOptionLabelFromRecordUsing(fn (Subscription $record): string => self::formatSubscriptionOptionLabel($record))
                                     ->searchable()
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set) {
@@ -71,27 +70,30 @@ class InvoiceForm
                                                 : null;
 
                                             if ($sub) {
-                                                $fee     = $sub->plan->amount;
+                                                $fee = (float) ($sub->plan->amount ?? 0);
                                                 $taxRate = Helpers::getTaxRate() ?: 0;
-                                                $tax     = ($fee * $taxRate) / 100;
-                                                $discountAmount = $get('discount_amount') ?: 0;
-                                                $total   = $fee + $tax - $discountAmount;
+                                                $discountAmount = (float) ($get('discount_amount') ?: 0);
+                                                $paid = (float) ($get('paid_amount') ?: 0);
 
-                                                $fee   = round($fee);
-                                                $tax   = round($tax);
-                                                $total = round($fee + $tax - $discountAmount);
-                                                $due   = round($total - ($get('paid_amount') ?: 0));
+                                                $summary = InvoiceCalculator::summary(
+                                                    $fee,
+                                                    $taxRate,
+                                                    $discountAmount,
+                                                    $paid,
+                                                );
 
-                                                $set('subscription_fee', $fee);
-                                                $set('tax',              $tax);
-                                                $set('total_amount',     $total);
-                                                $set('due_amount',       $due);
+                                                $set('subscription_fee', $summary['fee']);
+                                                $set('tax', $summary['tax']);
+                                                $set('discount_amount', $summary['discount_amount']);
+                                                $set('total_amount', $summary['total']);
+                                                $set('paid_amount', $summary['paid']);
+                                                $set('due_amount', $summary['due']);
                                             } else {
                                                 $set('subscription_fee', 0);
-                                                $set('tax',              0);
-                                                $set('total_amount',     0);
-                                                $set('discount_amount',  0);
-                                                $set('due_amount',       0);
+                                                $set('tax', 0);
+                                                $set('total_amount', 0);
+                                                $set('discount_amount', 0);
+                                                $set('due_amount', 0);
                                             }
                                         }
                                     )
@@ -114,15 +116,24 @@ class InvoiceForm
                                     ->placeholder('Select Discount')
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set) {
-                                            $fee           = $get('subscription_fee') ?: 0;
-                                            $tax           = $get('tax') ?: 0;
-                                            $discountPct   = (int) $get('discount');
+                                            $fee = $get('subscription_fee') ?: 0;
+                                            $discountPct = (int) $get('discount');
                                             $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
-                                            $total         = $fee + $tax - $discountAmount;
+                                            $paid = (float) ($get('paid_amount') ?: 0);
+                                            $taxRate = Helpers::getTaxRate() ?: 0;
 
-                                            $set('discount_amount', round($discountAmount));
-                                            $set('total_amount', round($total));
-                                            $set('due_amount', max($total - $get('paid_amount'), 0));
+                                            $summary = InvoiceCalculator::summary(
+                                                (float) $fee,
+                                                $taxRate,
+                                                $discountAmount,
+                                                $paid,
+                                            );
+
+                                            $set('discount_amount', $summary['discount_amount']);
+                                            $set('tax', $summary['tax']);
+                                            $set('total_amount', $summary['total']);
+                                            $set('paid_amount', $summary['paid']);
+                                            $set('due_amount', $summary['due']);
                                         }
                                     ),
                                 TextInput::make('discount_amount')
@@ -131,19 +142,29 @@ class InvoiceForm
                                     ->debounce(300)
                                     ->default(0)
                                     ->prefix(Helpers::getCurrencySymbol())
-                                    ->maxValue(fn(Get $get): float => $get('subscription_fee') ?: 0)
+                                    ->maxValue(fn (Get $get): float => $get('subscription_fee') ?: 0)
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set, $livewire, TextInput $component) {
                                             $livewire->validateOnly($component->getStatePath());
 
-                                            $fee            = $get('subscription_fee') ?: 0;
-                                            $entered        = $get('discount_amount') ?: 0;
-                                            $clamped        = min(max($entered, 0), $fee);
-                                            $tax            = $get('tax') ?: 0;
-                                            $total          = $fee + $tax - $clamped;
+                                            $fee = $get('subscription_fee') ?: 0;
+                                            $entered = $get('discount_amount') ?: 0;
+                                            $clamped = min(max($entered, 0), $fee);
+                                            $paid = (float) ($get('paid_amount') ?: 0);
+                                            $taxRate = Helpers::getTaxRate() ?: 0;
 
-                                            $set('total_amount', round($total));
-                                            $set('due_amount', max($total - $get('paid_amount'), 0));
+                                            $summary = InvoiceCalculator::summary(
+                                                (float) $fee,
+                                                $taxRate,
+                                                (float) $clamped,
+                                                $paid,
+                                            );
+
+                                            $set('discount_amount', $summary['discount_amount']);
+                                            $set('tax', $summary['tax']);
+                                            $set('total_amount', $summary['total']);
+                                            $set('paid_amount', $summary['paid']);
+                                            $set('due_amount', $summary['due']);
                                         }
                                     ),
                                 Textarea::make('discount_note')
@@ -151,11 +172,7 @@ class InvoiceForm
                                     ->placeholder('E.g. introductory offer'),
                                 Radio::make('payment_method')
                                     ->label('Payment Method')
-                                    ->options([
-                                        'cash' => 'Offline',
-                                        'online' => 'Online',
-                                        'cheque' => 'Cheque (legacy)',
-                                    ])
+                                    ->options(PaymentMethod::options())
                                     ->default('cash')
                                     ->inline()
                                     ->inlineLabel(false)
@@ -175,7 +192,7 @@ class InvoiceForm
                                     ->prefix(Helpers::getCurrencySymbol())
                                     ->required(),
                                 TextInput::make('tax')
-                                    ->label('Tax (' . Helpers::getTaxRate() . '%)')
+                                    ->label('Tax ('.Helpers::getTaxRate().'%)')
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -199,7 +216,7 @@ class InvoiceForm
     /**
      * Format the subscription option label for display in the select input.
      *
-     * @param Subscription $subscription The subscription record to format.
+     * @param  Subscription  $subscription  The subscription record to format.
      * @return string The formatted label for the subscription option.
      */
     private static function formatSubscriptionOptionLabel(Subscription $subscription): string

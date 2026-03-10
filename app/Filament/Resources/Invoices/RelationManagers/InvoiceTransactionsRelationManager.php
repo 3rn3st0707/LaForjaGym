@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\Invoices\RelationManagers;
 
 use App\Helpers\Helpers;
+use App\Support\Billing\PaymentMethod;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class InvoiceTransactionsRelationManager extends RelationManager
 {
@@ -31,11 +32,11 @@ class InvoiceTransactionsRelationManager extends RelationManager
                     ->badge(),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn($state): string => Helpers::formatCurrency($state))
+                    ->formatStateUsing(fn ($state): string => Helpers::formatCurrency($state))
                     ->sortable(),
                 TextColumn::make('payment_method')
                     ->label('Method')
-                    ->placeholder('-'),
+                    ->formatStateUsing(fn (?string $state): string => $state ? PaymentMethod::channelLabel($state) : '-'),
                 TextColumn::make('note')
                     ->label('Note')
                     ->wrap()

@@ -5,38 +5,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Invoice {{ $invoice->number }}</title>
-    <style>
-        @php
+    @php
         /**
-             * Inter font files are included locally for PDF rendering.
-             *
-             * DomPDF does not support WOFF2, so we ship TTF weights under `public/fonts/inter`.
-             *
-             * @var array<int, string> $interFilesByWeight
-             */
-        $interFilesByWeight =[ 400=>'Inter-Regular.ttf',
-        500=>'Inter-Medium.ttf',
-        600=>'Inter-SemiBold.ttf',
-        700=>'Inter-Bold.ttf',
-        800=>'Inter-ExtraBold.ttf',
-        900=>'Inter-Black.ttf',
+         * Inter font files are included locally for PDF rendering.
+         *
+         * DomPDF does not support WOFF2, so we ship TTF weights under `public/fonts/inter`.
+         *
+         * @var array<int, string> $interFilesByWeight
+         */
+        $interFilesByWeight = [
+            400 => 'Inter-Regular.ttf',
+            500 => 'Inter-Medium.ttf',
+            600 => 'Inter-SemiBold.ttf',
+            700 => 'Inter-Bold.ttf',
+            800 => 'Inter-ExtraBold.ttf',
+            900 => 'Inter-Black.ttf',
         ];
-
-        @endphp @foreach ($interFilesByWeight as $weight => $filename) @if (file_exists(public_path("fonts/inter/{$filename}"))) @font-face {
+    @endphp
+    <style>
+        @foreach ($interFilesByWeight as $weight => $filename)
+        @if (file_exists(public_path("fonts/inter/{$filename}")))
+        @font-face {
             font-family: 'Inter';
             font-style: normal;
-
-            font-weight: {
-                    {
-                    $weight
-                }
-            }
-
-            ;
-            src: url('{{ public_path("fonts/inter/{$filename}") }}') format('truetype');
+            font-weight: {{ $weight }};
+            font-display: swap;
+            src: url('file://{{ public_path("fonts/inter/{$filename}") }}') format('truetype');
         }
+        @endif
+        @endforeach
 
-        @endif @endforeach @page {
+        @page {
             size: A4 portrait;
             margin: 0mm;
         }
@@ -452,7 +451,7 @@
                     @endif
                     <tr>
                         <td colspan="2">
-                            <div style="background-color: var(--green); height: 2px; margin-inline: 10px; width: 100%;" />
+                            <div style="background-color: var(--green); height: 2px; margin-left: 10px; margin-right: 10px; width: 100%;"></div>
                         </td>
                     </tr>
                     <tr class="total-row">

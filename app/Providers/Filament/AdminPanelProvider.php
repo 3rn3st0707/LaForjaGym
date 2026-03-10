@@ -34,8 +34,6 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
  * Filament panel provider for the main admin panel.
- *
- * This app is intentionally single-tenant.
  */
 class AdminPanelProvider extends PanelProvider
 {

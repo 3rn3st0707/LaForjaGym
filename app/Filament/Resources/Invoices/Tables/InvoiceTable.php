@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceTransaction;
 use App\Models\Subscription;
 use App\Services\Email\InvoiceEmailService;
+use App\Support\Billing\PaymentMethod;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -199,11 +200,7 @@ class InvoiceTable
                                     ->required(),
                                 Select::make('payment_method')
                                     ->label('Payment Method')
-                                    ->options([
-                                        'cash' => 'Offline',
-                                        'online' => 'Online',
-                                        'cheque' => 'Cheque (legacy)',
-                                    ])
+                                    ->options(PaymentMethod::options())
                                     ->default(fn (Invoice $record): ?string => $record->payment_method ?: 'cash')
                                     ->nullable(),
                                 Textarea::make('note')
