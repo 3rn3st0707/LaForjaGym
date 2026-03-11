@@ -159,6 +159,55 @@ php artisan schedule:work
 >
 > If those tasks dispatch queued jobs (like import/export or notifications), then the queue worker must also be running to process them.
 
+## API (JSON, v1)
+
+Gymie ships with a versioned JSON API under `routes/api.php` for integrations.
+
+### Authentication (Sanctum Bearer Tokens)
+
+-   Login: `POST /api/v1/auth/login`
+-   Current user: `GET /api/v1/me`
+-   Logout: `POST /api/v1/auth/logout`
+
+Example:
+
+```bash
+curl -sX POST "$APP_URL/api/v1/auth/login" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password"}'
+```
+
+Use the returned token:
+
+```bash
+curl -s "$APP_URL/api/v1/me" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <token>"
+```
+
+Notes:
+
+-   The API is bearer-token only. Being logged into Filament in the browser does not authenticate API requests.
+-   `/api/v1/me` always includes roles and permissions. Other user endpoints include permissions only when requested:
+    -   `GET /api/v1/users?include=permissions` or `GET /api/v1/users?include_permissions=1`
+
+### Index Query Parameters (Rich Filtering)
+
+All index endpoints support allowlisted query params:
+
+-   Search: `?q=...`
+-   Pagination: `?page=...&per_page=...`
+-   Sort (multi-sort): `?sort=-created_at,name`
+-   Soft deletes (where supported): `?trashed=with|only`
+-   Includes (allowlisted): `?include=service,subscription.member`
+-   Filters (allowlisted): `?filter[field]=value`
+    -   Range syntax for date/datetime: `?filter[date]=2026-03-01..2026-03-31`
+
+Allowlists (searchable/sortable/includes/filters) are defined per resource in:
+
+-   `app/Services/Api/Schemas/*Schema.php` via `::queryRules()`
+
 ## Meet Your Artisans
 
 [LUBUS](http://lubus.in) is a web design agency based in Mumbai.

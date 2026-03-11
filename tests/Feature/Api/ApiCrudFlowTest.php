@@ -9,7 +9,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
-it('supports core CRUD flows for first-party integrations', function (): void {
+it('supports core CRUD flows for integrations', function (): void {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
     $permissions = [
