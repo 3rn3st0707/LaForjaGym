@@ -23,7 +23,10 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -43,6 +46,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureApiRateLimiting();
+        $this->configureScrambleApiDocs();
+
         FilamentAsset::register([
             Css::make('gymie-styles', __DIR__.'/../../resources/css/custom.css'),
         ]);
@@ -123,6 +129,65 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureDeletionPrevention();
         $this->registerModelObservers();
+    }
+
+    /**
+     * Configure Scramble (OpenAPI) generation for the v1 API.
+     *
+     * This is guarded so the app remains bootable even when Scramble isn't installed yet.
+     */
+    private function configureScrambleApiDocs(): void
+    {
+        if (! class_exists(\Dedoc\Scramble\Scramble::class)) {
+            return;
+        }
+
+        $config = \Dedoc\Scramble\Scramble::configure();
+
+        if (method_exists($config, 'routes')) {
+            $config->routes(static function (\Illuminate\Routing\Route $route): bool {
+                return str_starts_with($route->uri, 'api/v1/');
+            });
+        }
+
+        if (method_exists($config, 'withOperationTransformers')) {
+            $config->withOperationTransformers([
+                \App\Services\Api\Docs\AddIndexQueryParametersTransformer::class,
+            ]);
+        }
+
+        if (method_exists($config, 'withDocumentTransformers') && class_exists(\Dedoc\Scramble\Support\Generator\SecurityScheme::class)) {
+            $config->withDocumentTransformers(static function (mixed $openApi): void {
+                if (! is_object($openApi) || ! method_exists($openApi, 'secure')) {
+                    return;
+                }
+
+                if (! method_exists(\Dedoc\Scramble\Support\Generator\SecurityScheme::class, 'http')) {
+                    return;
+                }
+
+                $openApi->secure(\Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer'));
+            });
+        }
+    }
+
+    /**
+     * Configure API rate limiters used by the `api` middleware group.
+     *
+     * Defining these explicitly prevents "throttle:api" from relying on
+     * framework defaults that can vary between versions.
+     */
+    private function configureApiRateLimiting(): void
+    {
+        RateLimiter::for('api', function (Request $request): Limit {
+            $key = $request->user()?->getAuthIdentifier() ?? $request->ip();
+
+            return Limit::perMinute(60)->by((string) $key);
+        });
+
+        RateLimiter::for('api-login', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
     }
 
     /**

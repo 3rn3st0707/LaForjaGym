@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * Recent invoice transactions table for the selected dashboard range.
  *
- * This helps staff quickly verify payments/refunds without leaving the dashboard.
+ * This helps users quickly verify payments/refunds without leaving the dashboard.
  */
 class RecentTransactionsTableWidget extends TableWidget
 {
