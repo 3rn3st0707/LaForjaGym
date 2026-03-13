@@ -19,10 +19,10 @@ class ServiceInfolist
                 Section::make('')
                     ->schema([
                         TextEntry::make('name')
-                            ->label('Name'),
+                            ->label(__('app.fields.name')),
                         TextEntry::make('description')
-                            ->label('Description')
-                    ])->columns(1)
+                            ->label(__('app.fields.description')),
+                    ])->columns(1),
             ]);
     }
 }

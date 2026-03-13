@@ -32,34 +32,35 @@ class FollowUpInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
+
                         return new HtmlString($html);
                     })
                     ->schema([
                         TextEntry::make('enquiry.name')
-                            ->label('Enquiry')
+                            ->label(__('app.resources.enquiries.singular'))
                             ->weight(FontWeight::Bold)
                             ->color('success')
-                            ->url(fn($record): string => route('filament.admin.resources.enquiries.view', $record->enquiry_id)),
+                            ->url(fn ($record): string => route('filament.admin.resources.enquiries.view', $record->enquiry_id)),
                         TextEntry::make('user.name')
-                            ->label('Handled By')
+                            ->label(__('app.fields.handled_by'))
                             ->weight(FontWeight::Bold)
                             ->color('success')
-                            ->placeholder('N/A')
+                            ->placeholder(__('app.placeholders.na'))
                             ->url(
-                                fn($record) => $record->user_id
+                                fn ($record) => $record->user_id
                                     ? route('filament.admin.resources.users.view', $record->user_id)
                                     : null
                             ),
                         TextEntry::make('method')
-                            ->label('Method'),
+                            ->label(__('app.fields.method')),
                         TextEntry::make('schedule_date')
-                            ->label('Schedule Date')
+                            ->label(__('app.fields.schedule_date'))
                             ->date('d-m-Y'),
                         TextEntry::make('outcome')
-                            ->label('Outcome')
-                            ->placeholder('N/A')
+                            ->label(__('app.fields.outcome'))
+                            ->placeholder(__('app.placeholders.na'))
                             ->columnSpanFull(),
-                    ])->columns(2)
+                    ])->columns(2),
             ]);
     }
 }

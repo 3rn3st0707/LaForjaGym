@@ -43,7 +43,7 @@ return [
     |
     | This value controls the number of minutes until an issued token will be
     | considered expired. This will override any values set in the token's
-    | "expires_at" attribute, but first-party sessions are not affected.
+    | "expires_at" attribute, but session-based authentication is not affected.
     |
     */
 
@@ -69,9 +69,9 @@ return [
     | Sanctum Middleware
     |--------------------------------------------------------------------------
     |
-    | When authenticating your first-party SPA with Sanctum you may need to
-    | customize some of the middleware Sanctum uses while processing the
-    | request. You may change the middleware listed below as required.
+    | When authenticating browser-based sessions with Sanctum you may need to
+    | customize some of the middleware Sanctum uses while processing the request.
+    | You may change the middleware listed below as required.
     |
     */
 

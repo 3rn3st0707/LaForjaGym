@@ -10,6 +10,7 @@ use Carbon\CarbonPeriod;
 use Filament\Support\RawJs;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
+use Illuminate\Contracts\Support\Htmlable;
 
 /**
  * Cashflow trend chart (net collected vs expenses) for the selected date range.
@@ -22,8 +23,6 @@ class CashflowTrendChartWidget extends ChartWidget
     use InteractsWithPageFilters;
 
     protected static ?int $sort = -38;
-
-    protected ?string $heading = 'Cashflow';
 
     protected ?string $maxHeight = '400px';
 
@@ -42,6 +41,11 @@ class CashflowTrendChartWidget extends ChartWidget
         return 'line';
     }
 
+    public function getHeading(): string|Htmlable|null
+    {
+        return __('app.widgets.cashflow');
+    }
+
     /**
      * Quick range filters for this chart.
      *
@@ -52,11 +56,11 @@ class CashflowTrendChartWidget extends ChartWidget
     protected function getFilters(): ?array
     {
         return [
-            '7days' => 'Last 7 days',
-            '30days' => 'Last 30 days',
-            'quarter' => 'Last quarter',
-            '6months' => 'Last 6 months',
-            'ytd' => 'Year to date',
+            '7days' => __('app.analytics.ranges.7days'),
+            '30days' => __('app.analytics.ranges.30days'),
+            'quarter' => __('app.analytics.ranges.quarter'),
+            '6months' => __('app.analytics.ranges.6months'),
+            'ytd' => __('app.analytics.ranges.ytd'),
         ];
     }
 
@@ -185,7 +189,7 @@ JS);
             foreach ($period as $date) {
                 $dayKey = $date->toDateString();
 
-                $labels[] = CarbonImmutable::parse($date)->format('j M Y');
+                $labels[] = CarbonImmutable::parse($date)->translatedFormat('j M Y');
                 $collected[] = (float) ($collectedTrend[$dayKey] ?? 0);
                 $expenses[] = (float) ($expenseTrend[$dayKey] ?? 0);
             }
@@ -197,7 +201,7 @@ JS);
             foreach ($period as $date) {
                 $monthKey = $date->format('Y-m');
 
-                $labels[] = CarbonImmutable::parse($date)->format('M Y');
+                $labels[] = CarbonImmutable::parse($date)->translatedFormat('M Y');
                 $collected[] = (float) ($collectedTrend[$monthKey] ?? 0);
                 $expenses[] = (float) ($expenseTrend[$monthKey] ?? 0);
             }
@@ -206,7 +210,7 @@ JS);
         return [
             'datasets' => [
                 [
-                    'label' => 'Collected',
+                    'label' => __('app.analytics.collected'),
                     'data' => $collected,
                     'borderColor' => 'oklch(87.2% 0.01 258.338)',
                     'backgroundColor' => 'rgba(0, 0, 0, 0)',
@@ -221,7 +225,7 @@ JS);
                     'pointHoverBorderColor' => 'oklch(87.2% 0.01 258.338)',
                 ],
                 [
-                    'label' => 'Expenses',
+                    'label' => __('app.analytics.expenses'),
                     'data' => $expenses,
                     'borderColor' => '#093e3d',
                     'backgroundColor' => 'rgba(0, 0, 0, 0)',

@@ -2,13 +2,12 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
-use Filament\Actions\CreateAction;
-use Filament\Schemas\Components\Tabs\Tab;
 use App\Enums\Status;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListUsers extends ListRecords
@@ -19,30 +18,31 @@ class ListUsers extends ListRecords
     {
         return [
             CreateAction::make()
-                ->icon('heroicon-m-plus'),
+                ->icon('heroicon-m-plus')
+                ->label(__('app.actions.new', ['resource' => UserResource::getModelLabel()])),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Administration',
-            'Users',
+            __('app.navigation.groups.administration'),
+            UserResource::getNavigationLabel(),
         ];
     }
 
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('All'),
-            'active' => Tab::make('Active')
+            'all' => Tab::make(__('app.common.all')),
+            'active' => Tab::make(__('app.status.active'))
                 ->badge(User::query()->where('status', 'active')->count())
                 ->badgeColor(Status::Active->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'active')),
-            'inactive' => Tab::make('Inactive')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'active')),
+            'inactive' => Tab::make(__('app.status.inactive'))
                 ->badge(User::query()->where('status', 'inactive')->count())
                 ->badgeColor(Status::Inactive->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'inactive')),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'inactive')),
         ];
     }
 }

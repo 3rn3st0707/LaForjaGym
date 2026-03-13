@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\Members\Pages;
 
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Members\MemberResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use App\Filament\Resources\Members\MemberResource;
-use Filament\Actions;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditMember extends EditRecord
@@ -26,15 +25,15 @@ class EditMember extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Edit ' . $this->record->name;
+        return __('app.actions.edit', ['resource' => MemberResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            MemberResource::getUrl('index')   => 'Members',
-            $this->record->name
+            __('app.navigation.groups.memberships'),
+            MemberResource::getUrl('index') => MemberResource::getNavigationLabel(),
+            $this->record->name,
         ];
     }
 }

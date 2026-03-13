@@ -39,7 +39,9 @@ final class PaymentMethod
      */
     public static function channelLabel(?string $value): string
     {
-        return self::isOnline($value) ? 'Online' : 'Offline';
+        return self::isOnline($value)
+            ? __('app.payment_methods.online')
+            : __('app.payment_methods.offline');
     }
 
     /**
@@ -50,9 +52,9 @@ final class PaymentMethod
     public static function options(): array
     {
         return [
-            'cash' => 'Offline',
-            'online' => 'Online',
-            'cheque' => 'Cheque (legacy)',
+            'cash' => __('app.payment_methods.offline'),
+            'online' => __('app.payment_methods.online'),
+            'cheque' => __('app.payment_methods.cheque_legacy'),
         ];
     }
 }

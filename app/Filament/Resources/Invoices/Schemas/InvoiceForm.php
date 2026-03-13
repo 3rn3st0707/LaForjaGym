@@ -40,7 +40,7 @@ class InvoiceForm
                             ->columnSpan(3)
                             ->schema([
                                 TextInput::make('number')
-                                    ->label('Invoice No.')
+                                    ->label(__('app.fields.invoice_number'))
                                     ->required()
                                     ->readOnly()
                                     ->disabled()
@@ -51,7 +51,7 @@ class InvoiceForm
                                         $get('date')
                                     )),
                                 Select::make('subscription_id')
-                                    ->label('Subscription')
+                                    ->label(__('app.fields.subscription'))
                                     ->reactive()
                                     ->relationship(
                                         name: 'subscription',
@@ -99,21 +99,21 @@ class InvoiceForm
                                     )
                                     ->required(),
                                 DatePicker::make('date')
-                                    ->label('Date')
+                                    ->label(__('app.fields.date'))
                                     ->required()
                                     ->reactive()
                                     ->default(now()),
                                 DatePicker::make('due_date')
-                                    ->label('Due Date')
+                                    ->label(__('app.fields.due_date'))
                                     ->required()
                                     ->reactive(),
                                 Select::make('discount')
-                                    ->label('Discount')
+                                    ->label(__('app.fields.discount'))
                                     ->options(Helpers::getDiscounts())
                                     ->native(false)
                                     ->live()
                                     ->reactive()
-                                    ->placeholder('Select Discount')
+                                    ->placeholder(__('app.placeholders.select_discount'))
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set) {
                                             $fee = $get('subscription_fee') ?: 0;
@@ -137,7 +137,7 @@ class InvoiceForm
                                         }
                                     ),
                                 TextInput::make('discount_amount')
-                                    ->label('Discount Amount')
+                                    ->label(__('app.fields.discount_amount'))
                                     ->numeric()
                                     ->debounce(300)
                                     ->default(0)
@@ -168,22 +168,22 @@ class InvoiceForm
                                         }
                                     ),
                                 Textarea::make('discount_note')
-                                    ->label('Discount Note')
-                                    ->placeholder('E.g. introductory offer'),
+                                    ->label(__('app.fields.discount_note'))
+                                    ->placeholder(__('app.placeholders.discount_note_example')),
                                 Radio::make('payment_method')
-                                    ->label('Payment Method')
+                                    ->label(__('app.fields.payment_method'))
                                     ->options(PaymentMethod::options())
                                     ->default('cash')
                                     ->inline()
                                     ->inlineLabel(false)
                                     ->required(),
                             ]),
-                        Fieldset::make('Summary')
+                        Fieldset::make(__('app.titles.summary'))
                             ->columnSpan(1)
                             ->columns(1)
                             ->schema([
                                 TextInput::make('subscription_fee')
-                                    ->label('Subscription Fee')
+                                    ->label(__('app.fields.subscription_fee'))
                                     ->numeric()
                                     ->readOnly()
                                     ->disabled()
@@ -192,7 +192,7 @@ class InvoiceForm
                                     ->prefix(Helpers::getCurrencySymbol())
                                     ->required(),
                                 TextInput::make('tax')
-                                    ->label('Tax ('.Helpers::getTaxRate().'%)')
+                                    ->label(fn (): string => __('app.fields.tax_with_rate', ['rate' => Helpers::getTaxRate()]))
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -200,7 +200,7 @@ class InvoiceForm
                                     ->prefix(Helpers::getCurrencySymbol())
                                     ->readOnly(),
                                 TextInput::make('total_amount')
-                                    ->label('Total Amount')
+                                    ->label(__('app.fields.total_amount'))
                                     ->numeric()
                                     ->readOnly()
                                     ->disabled()

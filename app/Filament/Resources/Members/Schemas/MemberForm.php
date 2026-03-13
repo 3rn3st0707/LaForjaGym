@@ -5,26 +5,23 @@ namespace App\Filament\Resources\Members\Schemas;
 use App\Filament\Resources\Subscriptions\Schemas\SubscriptionForm;
 use App\Helpers\Helpers;
 use App\Models\Member;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Components\Grid;
-use Filament\Forms\Components\Repeater;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Schema;
 
 class MemberForm
 {
     /**
      * Configure the member form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -40,7 +37,7 @@ class MemberForm
                             ->disk('public')
                             ->directory('images')
                             ->image()
-                            ->placeholder('Upload a logo (max 10MB)')
+                            ->placeholder(__('app.placeholders.upload_logo'))
                             ->loadingIndicatorPosition('left')
                             ->panelAspectRatio('6:7')
                             ->panelLayout('integrated')
@@ -51,117 +48,125 @@ class MemberForm
                         Grid::make()
                             ->schema([
                                 TextInput::make('code')
-                                    ->placeholder('Code for the member')
-                                    ->label('Member Code')
+                                    ->placeholder(__('app.placeholders.member_code'))
+                                    ->label(__('app.fields.member_code'))
                                     ->required()
                                     ->readOnly()
                                     ->disabled()
                                     ->dehydrated()
-                                    ->default(fn(Get $get) => Helpers::generateLastNumber(
+                                    ->default(fn (Get $get) => Helpers::generateLastNumber(
                                         'member',
                                         Member::class,
                                         null,
                                         'code'
                                     )),
                                 TextInput::make('name')
+                                    ->label(__('app.fields.name'))
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Name')
+                                    ->placeholder(__('app.placeholders.example_full_name'))
                                     ->columnSpan(2),
                                 TextInput::make('email')
+                                    ->label(__('app.fields.email'))
                                     ->email()
                                     ->live()
                                     ->maxLength(255)
                                     ->required()
-                                    ->placeholder('Email address')
+                                    ->placeholder(__('app.placeholders.example_email'))
                                     ->unique('members', 'email', ignoreRecord: true),
                                 TextInput::make('contact')
+                                    ->label(__('app.fields.contact'))
                                     ->tel()
-                                    ->placeholder('+1 555-123-4567')
+                                    ->placeholder(__('app.placeholders.example_phone'))
                                     ->maxLength(20)
                                     ->regex('/^\+?[0-9\s\-\(\)]+$/') // Allows +, digits, spaces, dashes, and parentheses
                                     ->required()
                                     ->hintIcon('heroicon-m-question-mark-circle')
-                                    ->hintIconTooltip('Include country code. Only digits, spaces, +, -, and () allowed.'),
+                                    ->hintIconTooltip(__('app.help.phone_format')),
                                 TextInput::make('emergency_contact')
+                                    ->label(__('app.fields.emergency_contact'))
                                     ->tel()
-                                    ->placeholder('+1 555-123-4567')
+                                    ->placeholder(__('app.placeholders.example_phone'))
                                     ->maxLength(20)
                                     ->regex('/^\+?[0-9\s\-\(\)]+$/') // Allows +, digits, spaces, dashes, and parentheses
                                     ->hintIcon('heroicon-m-question-mark-circle')
-                                    ->hintIconTooltip('Include country code. Only digits, spaces, +, -, and () allowed.'),
+                                    ->hintIconTooltip(__('app.help.phone_format')),
                                 Select::make('gender')
                                     ->options([
-                                        'male' => 'Male',
-                                        'female' => 'Female',
-                                        'other' => 'Other',
+                                        'male' => __('app.options.gender.male'),
+                                        'female' => __('app.options.gender.female'),
+                                        'other' => __('app.options.gender.other'),
                                     ])->default('male')
+                                    ->label(__('app.fields.gender'))
                                     ->selectablePlaceholder(false)
                                     ->required(),
                                 DatePicker::make('dob')
                                     ->required()
-                                    ->label('Date of Birth')
-                                    ->placeholder('01-01-2001'),
+                                    ->label(__('app.fields.dob'))
+                                    ->placeholder(__('app.placeholders.date_example')),
                                 TextInput::make('health_issue')
-                                    ->label('Health Issues (if any)')
+                                    ->label(__('app.fields.health_issues'))
                                     ->maxLength(500)
-                                    ->placeholder('Any health issues?'),
+                                    ->placeholder(__('app.placeholders.health_issues')),
                                 Select::make('source')
                                     ->options([
-                                        'promotions' => 'Promotions',
-                                        'word_of_mouth' => 'Word of mouth',
-                                        'others' => 'Others'
+                                        'promotions' => __('app.options.source.promotions'),
+                                        'word_of_mouth' => __('app.options.source.word_of_mouth'),
+                                        'others' => __('app.options.source.others'),
                                     ])->default('promotions')
+                                    ->label(__('app.fields.source'))
                                     ->selectablePlaceholder(false),
                                 Select::make('goal')
                                     ->options([
-                                        'fitness' => 'Fitness',
-                                        'body_building' => 'Body Building',
-                                        'fatloss' => 'Fatloss',
-                                        'weightgain' => 'Weightgain',
-                                        'others' => 'Others'
+                                        'fitness' => __('app.options.goal.fitness'),
+                                        'body_building' => __('app.options.goal.body_building'),
+                                        'fatloss' => __('app.options.goal.fatloss'),
+                                        'weightgain' => __('app.options.goal.weightgain'),
+                                        'others' => __('app.options.goal.others'),
                                     ])->default('fitness')
-                                    ->label('Goal ?')
+                                    ->label(__('app.fields.goal'))
                                     ->selectablePlaceholder(false),
-                            ])->columns(3)->columnSpan(3)
+                            ])->columns(3)->columnSpan(3),
                     ])->columns(4),
-                Section::make('Location')
+                Section::make(__('app.ui.location'))
                     ->columns(2)
                     ->schema([
                         Textarea::make('address')
+                            ->label(__('app.fields.address'))
                             ->required()
                             ->rows(5)
-                            ->placeholder('Room No./Wing, Building/Apt. name, street name'),
+                            ->placeholder(__('app.placeholders.address_example')),
                         Group::make()
                             ->columns(2)
                             ->schema([
                                 Select::make('country')
-                                    ->label('Country')
-                                    ->placeholder('Select an country')
+                                    ->label(__('app.fields.country'))
+                                    ->placeholder(__('app.placeholders.select_country'))
                                     ->options(Helpers::getCountries())
                                     ->required()
                                     ->reactive()
-                                    ->afterStateUpdated(fn($state, callable $set) => [
+                                    ->afterStateUpdated(fn ($state, callable $set) => [
                                         $set('state', null),
                                         $set('city', null),
                                     ]),
                                 Select::make('state')
-                                    ->label('State')
-                                    ->placeholder('Select an state')
-                                    ->options(fn($get) => Helpers::getStates($get('country')))
+                                    ->label(__('app.fields.state'))
+                                    ->placeholder(__('app.placeholders.select_state'))
+                                    ->options(fn ($get) => Helpers::getStates($get('country')))
                                     ->reactive(),
                                 Select::make('city')
-                                    ->label('City')
-                                    ->placeholder('Select an city')
-                                    ->options(fn($get) => Helpers::getCities($get('state')))
+                                    ->label(__('app.fields.city'))
+                                    ->placeholder(__('app.placeholders.select_city'))
+                                    ->options(fn ($get) => Helpers::getCities($get('state')))
                                     ->reactive(),
                                 TextInput::make('pincode')
+                                    ->label(__('app.fields.pincode'))
                                     ->numeric()
                                     ->required()
-                                    ->placeholder('PIN code'),
+                                    ->placeholder(__('app.placeholders.pincode')),
                             ]),
                     ]),
-                Section::make('Subscription & Invoice')
+                Section::make(__('app.titles.subscription_and_invoice'))
                     ->visibleOn('create')
                     ->schema([
                         Repeater::make('subscriptions')
@@ -173,7 +178,7 @@ class MemberForm
                             ->deletable(false)
                             ->extraAttributes(['class' => 'rmv_rept-space'])
                             ->columns(3)
-                            ->schema(fn(HasSchemas $livewire): array => SubscriptionForm::configure(Schema::make($livewire))
+                            ->schema(fn (HasSchemas $livewire): array => SubscriptionForm::configure(Schema::make($livewire))
                                 ->getComponents(withActions: false)),
                     ]),
             ]);

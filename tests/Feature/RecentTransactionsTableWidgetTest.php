@@ -79,6 +79,6 @@ it('shows only the top 5 recent transactions on the dashboard widget', function 
         ->loadTable()
         ->assertCanSeeTableRecords($expected)
         ->assertCanNotSeeTableRecords([$excluded])
-        ->assertSee('Payment')
-        ->assertSee('Refund');
+        ->assertSee(__('app.transactions.payment'))
+        ->assertSee(__('app.transactions.refund'));
 });

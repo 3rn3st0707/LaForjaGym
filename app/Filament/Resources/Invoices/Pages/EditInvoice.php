@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\Invoices\Pages;
 
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Invoices\InvoiceResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use App\Filament\Resources\Invoices\InvoiceResource;
-use Filament\Actions;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditInvoice extends EditRecord
@@ -16,7 +15,7 @@ class EditInvoice extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Edit Invoice No. #' . $this->record->number;
+        return __('app.titles.edit_invoice_number', ['number' => $this->record->number]);
     }
 
     protected function getHeaderActions(): array
@@ -32,9 +31,9 @@ class EditInvoice extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            'Billing',
-            InvoiceResource::getUrl('index')   => 'Invoices',
-            $this->record->number
+            __('app.navigation.groups.billing'),
+            InvoiceResource::getUrl('index') => InvoiceResource::getNavigationLabel(),
+            $this->record->number,
         ];
     }
 }

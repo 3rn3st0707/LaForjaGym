@@ -25,8 +25,6 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
      */
     protected string $view = 'filament.widgets.analytics.expense-spending-overview';
 
-    protected string $heading = 'Total Expense';
-
     /**
      * Selected range key for this widget.
      *
@@ -50,11 +48,11 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
     public function getFilters(): array
     {
         return [
-            '7days' => 'Last 7 days',
-            '30days' => 'Last 30 days',
-            'quarter' => 'Last quarter',
-            '6months' => 'Last 6 months',
-            'ytd' => 'Year to date',
+            '7days' => __('app.analytics.ranges.7days'),
+            '30days' => __('app.analytics.ranges.30days'),
+            'quarter' => __('app.analytics.ranges.quarter'),
+            '6months' => __('app.analytics.ranges.6months'),
+            'ytd' => __('app.analytics.ranges.ytd'),
         ];
     }
 
@@ -153,7 +151,7 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
             ->map(function (array $row, int $index) use ($palette, $otherColor): array {
                 $category = (string) $row['category'];
                 $label = $category === 'Other'
-                    ? 'Other'
+                    ? __('app.analytics.other')
                     : (Helpers::getExpenseCategoryLabel($category) ?? $category);
 
                 return [
@@ -182,7 +180,7 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
         $segments = $this->buildSegments($range);
 
         return [
-            'heading' => $this->heading,
+            'heading' => __('app.widgets.total_expense'),
             'totalExpense' => Helpers::formatCurrency($expenses),
             'segments' => $segments,
         ];

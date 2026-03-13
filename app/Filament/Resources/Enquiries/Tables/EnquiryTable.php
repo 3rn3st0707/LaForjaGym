@@ -2,171 +2,167 @@
 
 namespace App\Filament\Resources\Enquiries\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Table;
-use Filament\Forms\Components\DatePicker;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\CreateAction;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use App\Filament\Resources\Members\MemberResource;
 use App\Models\Enquiry;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class EnquiryTable
 {
     /**
      * Configure the enquiry table schema.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('id')->sortable()->toggleable(isToggledHiddenByDefault: true)->label('ID'),
-                TextColumn::make('name')->searchable()->sortable()->label('Name'),
-                TextColumn::make('email')->searchable()->toggleable(isToggledHiddenByDefault: false)->label('Email'),
-                TextColumn::make('contact')->toggleable(isToggledHiddenByDefault: true)->label('Contact'),
-                TextColumn::make('date')->sortable()->date('d-m-Y')->toggleable(isToggledHiddenByDefault: true)->label('Date'),
-                TextColumn::make('start_by')->date('d-m-Y')->toggleable(isToggledHiddenByDefault: true)->label('Start by'),
+                TextColumn::make('id')->sortable()->toggleable(isToggledHiddenByDefault: true)->label(__('app.fields.id')),
+                TextColumn::make('name')->searchable()->sortable()->label(__('app.fields.name')),
+                TextColumn::make('email')->searchable()->toggleable(isToggledHiddenByDefault: false)->label(__('app.fields.email')),
+                TextColumn::make('contact')->toggleable(isToggledHiddenByDefault: true)->label(__('app.fields.contact')),
+                TextColumn::make('date')->sortable()->date('d-m-Y')->toggleable(isToggledHiddenByDefault: true)->label(__('app.fields.date')),
+                TextColumn::make('start_by')->date('d-m-Y')->toggleable(isToggledHiddenByDefault: true)->label(__('app.fields.start_by')),
                 TextColumn::make('status')
                     ->badge()
-                    ->label('Status')
+                    ->label(__('app.fields.status'))
                     ->toggleable(isToggledHiddenByDefault: false),
             ])
             ->defaultSort('id', 'desc')
             ->emptyStateIcon('heroicon-o-phone')
             ->emptyStateHeading(function ($livewire): string {
-                $dates       = $livewire->getTableFilterState('date') ?? [];
+                $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab         = $livewire->activeTab;
-                $heading     = [
-                    'lead'   => 'No Lead Enquiries',
-                    'lost'   => 'No Lost Enquiries',
-                    'member' => 'No Member Enquiries',
-                ][$tab] ?? 'No Enquiries';
+                $records = __('app.resources.enquiries.plural');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$from && !$to) {
-                    return $heading;
+                if (! $from && ! $to) {
+                    return $status
+                        ? __('app.empty.no_status_records', ['status' => $status, 'records' => $records])
+                        : __('app.empty.no_records', ['records' => $records]);
                 }
 
                 if ($tab === 'all') {
-                    return 'No Enquiries in Date Range';
+                    return __('app.empty.no_records_in_range', ['records' => $records]);
                 }
 
                 return Enquiry::where('status', $tab)->exists()
-                    ? ($heading . ' in Date Range')
-                    : $heading;
+                    ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
+                    : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
             ->emptyStateDescription(function ($livewire): ?string {
-                $dates               = $livewire->getTableFilterState('date') ?? [];
-                [$fromRaw, $toRaw]   = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab                 = $livewire->activeTab;
-                $defaultDescriptions = [
-                    'lead'   => 'Looks like there are no lead enquiries right now.',
-                    'lost'   => 'No enquiries have been marked as lost yet.',
-                    'member' => 'No member enquiries to display at the moment.',
-                ];
+                $dates = $livewire->getTableFilterState('date') ?? [];
+                [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
+                $records = __('app.resources.enquiries.plural');
+                $record = __('app.resources.enquiries.singular');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$fromRaw && !$toRaw) {
-                    return $defaultDescriptions[$tab] ?? 'Create a enquiry to get started.';
+                if (! $fromRaw && ! $toRaw) {
+                    return $status
+                        ? __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status])
+                        : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : 'the beginning';
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : 'today';
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
 
                 if ($tab === 'all') {
-                    return "We found no enquiries created between {$from} and {$to}.";
+                    return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
                 }
 
-                if (!Enquiry::where('status', $tab)->exists()) {
-                    return $defaultDescriptions[$tab] ?? 'Create a enquiry to get started.';
+                if (! Enquiry::where('status', $tab)->exists()) {
+                    return __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status]);
                 }
 
-                return "We found no {$tab} enquiries between {$from} and {$to}.";
+                return __('app.empty.found_none_status_between', ['status' => $status, 'records' => $records, 'from' => $from, 'to' => $to]);
             })
             ->emptyStateActions([
                 CreateAction::make()
                     ->icon('heroicon-o-plus')
-                    ->label('New enquiry')
-                    ->hidden(fn() => Enquiry::exists()),
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.enquiries.singular')]))
+                    ->hidden(fn (): bool => Enquiry::exists()),
             ])
             ->filters([
                 TrashedFilter::make(),
                 Filter::make('date')
                     ->schema([
-                        DatePicker::make('date_from'),
-                        DatePicker::make('date_to'),
+                        DatePicker::make('date_from')->label(__('app.fields.date_from')),
+                        DatePicker::make('date_to')->label(__('app.fields.date_to')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['date_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('date', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '>=', $date),
                             )
                             ->when(
                                 $data['date_to'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
                             );
-                    })
+                    }),
             ])
             ->recordActions([
                 ActionGroup::make([
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Status')
+                            ->label(__('app.fields.status'))
                             ->disabled()
-                            ->visible(fn($record) => in_array($record->status->value, ['lead']))
+                            ->visible(fn ($record) => in_array($record->status->value, ['lead']))
                             ->color('gray'),
                         Action::make('convert_to_member')
-                            ->label('Convert to Member')
+                            ->label(__('app.actions.convert_to_member'))
                             ->icon('heroicon-m-arrows-right-left')
                             ->color('success')
                             ->requiresConfirmation()
-                            ->visible(fn(Enquiry $record) => $record->status->value === 'lead')
-                            ->url(fn(Enquiry $record) => MemberResource::getUrl(
+                            ->visible(fn (Enquiry $record) => $record->status->value === 'lead')
+                            ->url(fn (Enquiry $record) => MemberResource::getUrl(
                                 'create',
                                 ['enquiry_id' => $record->id],
                             )),
                         Action::make('mark_as_lost')
-                            ->label('Mark as Lost')
+                            ->label(__('app.actions.mark_as_lost'))
                             ->icon('heroicon-m-x-circle')
                             ->color('danger')
                             ->requiresConfirmation()
-                            ->action(fn(Enquiry $record) => tap($record, function ($record) {
+                            ->action(fn (Enquiry $record) => tap($record, function ($record) {
                                 $record->update(['status' => 'lost']);
                                 Notification::make()
-                                    ->title('Enquiry Marked as Lost')
+                                    ->title(__('app.notifications.enquiry_marked_as_lost'))
                                     ->success()
                                     ->icon('heroicon-m-no-symbol')
                                     ->iconColor('danger')
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value === 'lead'),
+                            ->visible(fn ($record) => $record->status->value === 'lead'),
                     ])->dropdown(false),
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Record Actions')
+                            ->label(__('app.actions.record_actions'))
                             ->disabled()
                             ->color('gray'),
                         EditAction::make()->hiddenLabel(),
                         DeleteAction::make()
-                            ->hiddenLabel()
-                    ])->dropdown(false)
-                ])
-            ])->recordUrl(fn($record): string => route('filament.admin.resources.enquiries.view', $record->id))
+                            ->hiddenLabel(),
+                    ])->dropdown(false),
+                ]),
+            ])->recordUrl(fn ($record): string => route('filament.admin.resources.enquiries.view', $record->id))
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

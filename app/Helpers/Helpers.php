@@ -10,6 +10,7 @@ use App\Support\Billing\Discounts;
 use App\Support\Billing\TaxRate;
 use App\Support\Dates\FiscalYear;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Nnjeim\World\World;
 
@@ -242,7 +243,8 @@ class Helpers
                 continue;
             }
 
-            $options[$key] = $category;
+            $translationKey = "app.expense_categories.{$key}";
+            $options[$key] = Lang::has($translationKey) ? __($translationKey) : $category;
         }
 
         return $options;

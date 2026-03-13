@@ -32,24 +32,25 @@ class PlanInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
+
                         return new HtmlString($html);
                     })
                     ->schema([
                         TextEntry::make('code')
-                            ->label('Code')
+                            ->label(__('app.fields.code'))
                             ->columnSpan(1),
                         TextEntry::make('name')
-                            ->label('Name')
+                            ->label(__('app.fields.name'))
                             ->columnSpan(2),
                         TextEntry::make('service.name')
-                            ->label('Service'),
+                            ->label(__('app.fields.service')),
                         TextEntry::make('days')
-                            ->label('Days'),
+                            ->label(__('app.fields.days')),
                         TextEntry::make('amount')
-                            ->label('Amount')
+                            ->label(__('app.fields.amount'))
                             ->money(Helpers::getCurrencyCode()),
                         TextEntry::make('description')
-                            ->label('Description')
+                            ->label(__('app.fields.description'))
                             ->columnSpanFull(),
                     ])->columns(3),
             ]);

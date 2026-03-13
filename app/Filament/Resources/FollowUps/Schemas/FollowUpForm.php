@@ -2,18 +2,15 @@
 
 namespace App\Filament\Resources\FollowUps\Schemas;
 
-use Filament\Schemas\Schema;
+use App\Filament\Resources\Enquiries\RelationManagers\FollowUpsRelationManager;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use App\Filament\Resources\Enquiries\RelationManagers\FollowUpsRelationManager;
+use Filament\Schemas\Schema;
 
 class FollowUpForm
 {
     /**
      * Configure the follow-up form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -21,23 +18,23 @@ class FollowUpForm
             ->columns(1)
             ->components([
                 Select::make('enquiry_id')
-                    ->label('Enquiry')
+                    ->label(__('app.resources.enquiries.singular'))
                     ->relationship(name: 'enquiry', titleAttribute: 'name')
-                    ->placeholder('Select Enquiry')
+                    ->placeholder(__('app.placeholders.select_enquiry'))
                     ->hiddenOn(FollowUpsRelationManager::class)
                     ->required(),
                 Select::make('method')
                     ->options([
-                        'call' => 'Call',
-                        'email' => 'Email',
-                        'in_person' => 'In person',
-                        'whatsapp' => 'WhatsApp',
-                        'other' => 'Others'
+                        'call' => __('app.options.follow_up_method.call'),
+                        'email' => __('app.options.follow_up_method.email'),
+                        'in_person' => __('app.options.follow_up_method.in_person'),
+                        'whatsapp' => __('app.options.follow_up_method.whatsapp'),
+                        'other' => __('app.options.follow_up_method.other'),
                     ])->default('call')
                     ->required()
-                    ->label('Method'),
+                    ->label(__('app.fields.method')),
                 DatePicker::make('schedule_date')
-                    ->label('Schedule Date')
+                    ->label(__('app.fields.schedule_date'))
                     ->closeOnDateSelection()
                     ->required()
                     ->required()

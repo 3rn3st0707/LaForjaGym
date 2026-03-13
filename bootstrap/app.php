@@ -17,7 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(prepend: [
+            \App\Http\Middleware\SetAppLocale::class,
+        ]);
+
         $middleware->api(prepend: [
+            \App\Http\Middleware\SetAppLocale::class,
             \App\Http\Middleware\ForceJsonResponse::class,
         ]);
     })
@@ -34,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json([
-                'message' => 'Invalid query parameters.',
+                'message' => __('app.api.invalid_query'),
                 'errors' => $errors,
             ], 400);
         });

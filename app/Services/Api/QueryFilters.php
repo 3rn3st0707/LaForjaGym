@@ -115,7 +115,7 @@ final class QueryFilters
 
         if ($errors !== []) {
             throw new HttpResponseException(response()->json([
-                'message' => 'Invalid query parameters.',
+                'message' => __('app.api.invalid_query'),
                 'errors' => $errors,
             ], 400));
         }

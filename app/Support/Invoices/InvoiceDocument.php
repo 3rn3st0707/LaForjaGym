@@ -50,23 +50,23 @@ final class InvoiceDocument
         $missing = [];
 
         if (! filled($invoice->number)) {
-            $missing[] = 'Invoice number';
+            $missing[] = __('app.invoices.missing.invoice_number');
         }
 
         if (! filled($invoice->date)) {
-            $missing[] = 'Invoice date';
+            $missing[] = __('app.invoices.missing.invoice_date');
         }
 
         if (! $invoice->subscription) {
-            $missing[] = 'Subscription';
+            $missing[] = __('app.invoices.missing.subscription');
         }
 
         if (! $invoice->subscription?->member) {
-            $missing[] = 'Member';
+            $missing[] = __('app.invoices.missing.member');
         }
 
         if ((float) ($invoice->total_amount ?? 0) <= 0) {
-            $missing[] = 'Invoice total amount';
+            $missing[] = __('app.invoices.missing.total_amount');
         }
 
         return $missing;

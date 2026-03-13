@@ -26,40 +26,40 @@ class ExpenseTable
             ->defaultSort('date', 'desc')
             ->columns([
                 TextColumn::make('name')
-                    ->label('Expense')
+                    ->label(__('app.resources.expenses.singular'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('date')
-                    ->label('Date')
+                    ->label(__('app.fields.date'))
                     ->date()
                     ->sortable(),
                 TextColumn::make('amount')
-                    ->label('Amount')
+                    ->label(__('app.fields.amount'))
                     ->numeric(decimalPlaces: 2)
                     ->prefix(Helpers::getCurrencySymbol())
                     ->sortable(),
                 TextColumn::make('category')
-                    ->label('Category')
+                    ->label(__('app.fields.category'))
                     ->searchable()
-                    ->formatStateUsing(fn(?string $state): string => Helpers::getExpenseCategoryLabel($state) ?? 'N/A'),
+                    ->formatStateUsing(fn (?string $state): string => Helpers::getExpenseCategoryLabel($state) ?? __('app.placeholders.na')),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('app.fields.status'))
                     ->badge()
-                    ->color(fn(Status $state): string => $state->getColor()),
+                    ->color(fn (Status $state): string => $state->getColor()),
                 TextColumn::make('vendor')
-                    ->label('Vendor')
+                    ->label(__('app.fields.vendor'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('due_date')
-                    ->label('Due Date')
+                    ->label(__('app.fields.due_date'))
                     ->date()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('paid_at')
-                    ->label('Paid at')
+                    ->label(__('app.fields.paid_at'))
                     ->dateTime()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('app.fields.created_at'))
                     ->since()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -71,17 +71,17 @@ class ExpenseTable
                         ->modalCancelAction(false)
                         ->modalAlignment('center')
                         ->modalWidth(Width::ScreenSmall)
-                        ->schema(fn($livewire, Expense $record): array => ExpenseInfolist::configure(
+                        ->schema(fn ($livewire, Expense $record): array => ExpenseInfolist::configure(
                             Schema::make($livewire)->model($record)->record($record),
                         )->getComponents(withActions: false)),
                     EditAction::make()
-                        ->modalHeading('Edit Expense')
-                        ->modalSubmitActionLabel('Save')
+                        ->modalHeading(__('app.actions.edit', ['resource' => __('app.resources.expenses.singular')]))
+                        ->modalSubmitActionLabel(__('app.actions.save'))
                         ->modalWidth(Width::ScreenLarge)
                         ->closeModalByClickingAway(false),
                     DeleteAction::make(),
                 ])
-                    ->label('Actions')
+                    ->label(__('app.actions.record_actions'))
                     ->icon('heroicon-m-ellipsis-vertical')
                     ->dropdown(),
             ])
@@ -91,19 +91,19 @@ class ExpenseTable
                 ]),
             ])
             ->emptyStateIcon('heroicon-o-banknotes')
-            ->emptyStateHeading('No Expenses')
-            ->emptyStateDescription('Create an expense to get started.')
+            ->emptyStateHeading(__('app.empty.no_records', ['records' => __('app.resources.expenses.plural')]))
+            ->emptyStateDescription(__('app.empty.create_to_get_started', ['resource' => __('app.resources.expenses.singular')]))
             ->emptyStateActions([
                 CreateAction::make()
-                    ->label('Add expense')
+                    ->label(__('app.actions.add_expense'))
                     ->icon('heroicon-m-plus')
-                    ->modalHeading('Add Expense')
-                    ->modalSubmitActionLabel('Save')
+                    ->modalHeading(__('app.actions.add_expense'))
+                    ->modalSubmitActionLabel(__('app.actions.save'))
                     ->createAnother()
-                    ->createAnotherAction(fn($action) => $action->label('Save & add another'))
+                    ->createAnotherAction(fn ($action) => $action->label(__('app.actions.save_add_another')))
                     ->modalWidth(Width::ScreenLarge)
                     ->closeModalByClickingAway(false)
-                    ->visible(fn() => !Expense::exists()),
+                    ->visible(fn () => ! Expense::exists()),
             ]);
     }
 }

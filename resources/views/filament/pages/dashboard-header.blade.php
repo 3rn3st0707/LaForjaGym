@@ -35,12 +35,12 @@
 
             @if ($period === 'custom')
                 <x-filament::button color="gray" outlined size="sm" wire:click="applyCustomRangeFromFilters">
-                    Apply
+                    {{ __('app.dashboard.actions.apply') }}
                 </x-filament::button>
             @endif
 
             <x-filament::button color="gray" outlined icon="heroicon-o-arrow-down-tray" wire:click="export">
-                Export
+                {{ __('app.dashboard.actions.export') }}
             </x-filament::button>
         </div>
 

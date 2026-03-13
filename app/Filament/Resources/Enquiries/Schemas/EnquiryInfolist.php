@@ -16,45 +16,44 @@ class EnquiryInfolist
 {
     /**
      * Configure the enquiry infolist schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->columns(4)
             ->schema([
-                Section::make('Details')
+                Section::make(__('app.ui.details'))
                     ->heading(function (Enquiry $record): HtmlString {
                         $status = $record->status;
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex" style="margin-left:6px;" :color="$color">
                                         {{ $label }}
                                     </x-filament::badge>',
-                            ['color' => $status->getColor(), 'label' => $status->getLabel(),]
+                            ['color' => $status->getColor(), 'label' => $status->getLabel()]
                         );
-                        return new HtmlString('Details ' . $html);
+
+                        return new HtmlString(e(__('app.ui.details')).' '.$html);
                     })
                     ->schema([
-                        TextEntry::make('name'),
-                        TextEntry::make('email')->label('Email')->copyable(),
-                        TextEntry::make('contact')->label('Contact')->copyable(),
-                        TextEntry::make('gender')->label('Gender'),
+                        TextEntry::make('name')->label(__('app.fields.name')),
+                        TextEntry::make('email')->label(__('app.fields.email'))->copyable(),
+                        TextEntry::make('contact')->label(__('app.fields.contact'))->copyable(),
+                        TextEntry::make('gender')->label(__('app.fields.gender')),
                         TextEntry::make('dob')
-                            ->label('Date of Birth')
+                            ->label(__('app.fields.dob'))
                             ->date(),
                         TextEntry::make('date')
+                            ->label(__('app.fields.date'))
                             ->date(),
                         TextEntry::make('user.name')
-                            ->label('Lead Owner')
+                            ->label(__('app.fields.lead_owner'))
                             ->weight(FontWeight::Bold)
                             ->color('success')
-                            ->url(fn($record): string => route('filament.admin.resources.users.view', $record->user_id)),
+                            ->url(fn ($record): string => route('filament.admin.resources.users.view', $record->user_id)),
                         TextEntry::make('start_by')
-                            ->label('Preferred Start Date')
+                            ->label(__('app.fields.preferred_start_date'))
                             ->date()
-                            ->placeholder('N/A'),
+                            ->placeholder(__('app.placeholders.na')),
                     ])
                     ->columns(3)
                     ->columnSpan(4),
@@ -62,36 +61,36 @@ class EnquiryInfolist
                     ->columnSpan(4)
                     ->columns([
                         'default' => 1,
-                        'sm'      => 2,
-                        'xl'      => 5,
+                        'sm' => 2,
+                        'xl' => 5,
                     ])
                     ->schema([
-                        Section::make('Location')
+                        Section::make(__('app.ui.location'))
                             ->columnSpan([
                                 'default' => 4,
-                                'sm'      => 1,
-                                'xl'      => 3,
+                                'sm' => 1,
+                                'xl' => 3,
                             ])
                             ->schema([
-                                TextEntry::make('address')->label('Address'),
+                                TextEntry::make('address')->label(__('app.fields.address')),
                                 Group::make()
                                     ->schema([
-                                        TextEntry::make('country')->label('Country'),
+                                        TextEntry::make('country')->label(__('app.fields.country')),
                                         TextEntry::make('state')
-                                            ->label('State')
-                                            ->placeholder('N/A'),
+                                            ->label(__('app.fields.state'))
+                                            ->placeholder(__('app.placeholders.na')),
                                         TextEntry::make('city')
-                                            ->label('City')
-                                            ->placeholder('N/A'),
-                                        TextEntry::make('pincode')->label('PIN Code'),
+                                            ->label(__('app.fields.city'))
+                                            ->placeholder(__('app.placeholders.na')),
+                                        TextEntry::make('pincode')->label(__('app.fields.pincode')),
                                     ])
                                     ->columns(4),
                             ]),
-                        Section::make('Preferences')
+                        Section::make(__('app.ui.preferences'))
                             ->columnSpan([
                                 'default' => 4,
-                                'sm'      => 1,
-                                'xl'      => 2,
+                                'sm' => 1,
+                                'xl' => 2,
                             ])
                             ->columns([
                                 'sm' => 1,
@@ -99,15 +98,15 @@ class EnquiryInfolist
                             ])
                             ->schema([
                                 TextEntry::make('interested_in')
-                                    ->label('Interested In')
+                                    ->label(__('app.fields.interested_in'))
                                     ->columnSpanFull()
-                                    ->placeholder('N/A'),
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('source')
-                                    ->label('Source'),
+                                    ->label(__('app.fields.source')),
                                 TextEntry::make('goal')
-                                    ->label('Goal ?'),
+                                    ->label(__('app.fields.goal')),
                             ]),
-                    ])
+                    ]),
             ]);
     }
 }

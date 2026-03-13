@@ -2,17 +2,23 @@
 
 namespace App\Filament\Resources\Members\RelationManagers;
 
-use Filament\Schemas\Schema;
-use Filament\Actions\CreateAction;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class SubscriptionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'subscriptions';
 
-    protected static ?string $title = 'Manage Subscriptions';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('app.resources.subscriptions.plural');
+    }
 
     /**
      * Determine if the relation manager is read-only.
@@ -26,9 +32,6 @@ class SubscriptionsRelationManager extends RelationManager
 
     /**
      * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public function form(Schema $schema): Schema
     {
@@ -37,9 +40,6 @@ class SubscriptionsRelationManager extends RelationManager
 
     /**
      * Define the table for listing records in the resource.
-     *
-     * @param Table $table
-     * @return Table
      */
     public function table(Table $table): Table
     {
@@ -47,10 +47,10 @@ class SubscriptionsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->icon('heroicon-s-plus')
-                    ->modalHeading('New Subscription')
+                    ->modalHeading(__('app.actions.new', ['resource' => __('app.resources.subscriptions.singular')]))
                     ->modalWidth('6xl')
                     ->closeModalByClickingAway(false)
-                    ->createAnother(false)
+                    ->createAnother(false),
             ]);
     }
 }

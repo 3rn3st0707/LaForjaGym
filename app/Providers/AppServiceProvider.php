@@ -104,7 +104,7 @@ class AppServiceProvider extends ServiceProvider
         DatePicker::configureUsing(function (DatePicker $datePicker) {
             $datePicker
                 ->native(false)
-                ->placeholder('01-01-2001')
+                ->placeholder(__('app.placeholders.date_example'))
                 ->displayFormat('d/m/Y')
                 ->prefixIcon('heroicon-o-calendar-days');
         });
@@ -115,7 +115,7 @@ class AppServiceProvider extends ServiceProvider
         DateTimePicker::configureUsing(function (DateTimePicker $datePicker) {
             $datePicker
                 ->native(false)
-                ->placeholder('01-01-2001 12:00')
+                ->placeholder(__('app.placeholders.date_time_example'))
                 ->displayFormat('d/m/Y H:i A')
                 ->prefixIcon('heroicon-o-calendar-days');
         });
@@ -218,8 +218,8 @@ class AppServiceProvider extends ServiceProvider
                                 $label = Str::kebab($relation);
                                 $action
                                     ->modalIcon('heroicon-o-x-mark')
-                                    ->modalHeading("Oops! Cannot Delete {$moduleName}")
-                                    ->modalDescription("This record has {$count} {$label}. Please delete them first.")
+                                    ->modalHeading(__('app.deletion_prevention.cannot_delete_title', ['module' => $moduleName]))
+                                    ->modalDescription(__('app.deletion_prevention.cannot_delete_description', ['count' => $count, 'relation' => $label]))
                                     ->modalCancelAction(false)
                                     ->modalSubmitAction(false);
                                 break;
@@ -245,8 +245,8 @@ class AppServiceProvider extends ServiceProvider
                                     $label = Str::kebab($relation);
                                     $action
                                         ->modalIcon('heroicon-o-x-mark')
-                                        ->modalHeading("Oops! Cannot Delete {$moduleName}")
-                                        ->modalDescription("At least one selected {$moduleName} has {$count} {$label}. Please delete those first.")
+                                        ->modalHeading(__('app.deletion_prevention.cannot_delete_title', ['module' => $moduleName]))
+                                        ->modalDescription(__('app.deletion_prevention.cannot_delete_bulk_description', ['module' => $moduleName, 'count' => $count, 'relation' => $label]))
                                         ->modalCancelAction(false)
                                         ->modalSubmitAction(false);
                                     break 2;

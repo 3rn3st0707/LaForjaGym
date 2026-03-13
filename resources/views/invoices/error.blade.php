@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Invoice unavailable</title>
+        <title>{{ __('app.invoices.error.title') }}</title>
         <style>
             body {
                 margin: 0;
@@ -68,14 +68,13 @@
     <body>
         <div class="wrap">
             <div class="card">
-                <h1>Invoice can’t be generated</h1>
+                <h1>{{ __('app.invoices.error.heading') }}</h1>
                 <p>
-                    This invoice is missing required information, so the preview/download isn’t available right now.
-                    Please update the invoice/subscription details and try again.
+                    {{ __('app.invoices.error.description') }}
                 </p>
 
                 @if (! empty($missing))
-                    <p><strong>Missing:</strong></p>
+                    <p><strong>{{ __('app.invoices.error.missing') }}:</strong></p>
                     <ul>
                         @foreach ($missing as $item)
                             <li>{{ $item }}</li>
@@ -84,16 +83,15 @@
                 @endif
 
                 <div style="margin-top: 16px;">
-                    <a class="btn" href="{{ url()->previous() }}">Back</a>
+                    <a class="btn" href="{{ url()->previous() }}">{{ __('app.actions.back') }}</a>
                 </div>
 
                 @if (isset($invoice))
                     <div class="meta">
-                        Invoice: {{ $invoice->number ?: '#' . $invoice->id }}
+                        {{ __('app.resources.invoices.singular') }}: {{ $invoice->number ?: '#' . $invoice->id }}
                     </div>
                 @endif
             </div>
         </div>
     </body>
 </html>
-

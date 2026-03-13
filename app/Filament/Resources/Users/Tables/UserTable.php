@@ -3,120 +3,143 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use App\Models\User;
-use Filament\Actions\DeleteAction;
+use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\ActionGroup;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
-use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Actions\RestoreAction;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class UserTable
 {
     /**
      * Configure the user table schema.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('id')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('id')
+                    ->label(__('app.fields.id'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 ImageColumn::make('photo')
+                    ->label(__('app.fields.photo'))
                     ->circular()
-                    ->defaultImageUrl(fn(User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name=' . $record->name),
-                TextColumn::make('name')->sortable()->searchable(),
-                TextColumn::make('email')->searchable(),
-                TextColumn::make('contact')->searchable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('gender')->searchable(),
+                    ->defaultImageUrl(fn (User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name),
+                TextColumn::make('name')
+                    ->label(__('app.fields.name'))
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('email')
+                    ->label(__('app.fields.email'))
+                    ->searchable(),
+                TextColumn::make('contact')
+                    ->label(__('app.fields.contact'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('gender')
+                    ->label(__('app.fields.gender'))
+                    ->searchable()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'male' => __('app.options.gender.male'),
+                        'female' => __('app.options.gender.female'),
+                        'other' => __('app.options.gender.other'),
+                        default => filled($state) ? ucfirst((string) $state) : __('app.placeholders.dash'),
+                    }),
                 TextColumn::make('roles.name')
-                    ->placeholder('N/A')
+                    ->label(__('app.fields.role'))
+                    ->placeholder(__('app.placeholders.na'))
                     ->searchable()
                     ->formatStateUsing(
-                        fn($state): string =>
-                        Str::headline($state)
+                        fn ($state): string => Str::headline($state)
                     )
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
+                    ->label(__('app.fields.status'))
                     ->badge(),
             ])
             ->emptyStateIcon('heroicon-o-users')
             ->emptyStateHeading(function ($livewire): string {
-                $dates       = $livewire->getTableFilterState('date') ?? [];
+                $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab         = $livewire->activeTab;
-                $heading     = [
-                    'active' => 'No Active Users',
-                    'inactive' => 'No Inactive Users',
-                ][$tab] ?? 'No Users';
+                $records = __('app.resources.users.plural');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$from && !$to) {
-                    return $heading;
+                if (! $from && ! $to) {
+                    return $status
+                        ? __('app.empty.no_status_records', ['status' => $status, 'records' => $records])
+                        : __('app.empty.no_records', ['records' => $records]);
                 }
 
                 if ($tab === 'all') {
-                    return 'No Users in Date Range';
+                    return __('app.empty.no_records_in_range', ['records' => $records]);
                 }
+
+                $base = __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
 
                 return User::where('status', $tab)->exists()
-                    ? ($heading . ' in Date Range')
-                    : $heading;
+                    ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
+                    : $base;
             })
             ->emptyStateDescription(function ($livewire): ?string {
-                $dates               = $livewire->getTableFilterState('date') ?? [];
-                [$fromRaw, $toRaw]   = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab                 = $livewire->activeTab;
-                $defaultDescriptions = [
-                    'active' => 'There are no users currently active.',
-                    'inactive' => 'There are no users marked as inactive.',
-                ];
+                $dates = $livewire->getTableFilterState('date') ?? [];
+                [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
+                $records = __('app.resources.users.plural');
+                $record = __('app.resources.users.singular');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$fromRaw && !$toRaw) {
-                    return $defaultDescriptions[$tab] ?? 'Create a user to get started.';
+                if (! $fromRaw && ! $toRaw) {
+                    return $status
+                        ? __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status])
+                        : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : 'the beginning';
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : 'today';
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
 
                 if ($tab === 'all') {
-                    return "We found no users created between {$from} and {$to}.";
+                    return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
                 }
 
-                if (!User::where('status', $tab)->exists()) {
-                    return $defaultDescriptions[$tab] ?? 'Create a user to get started.';
+                if (! User::where('status', $tab)->exists()) {
+                    return __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status]);
                 }
 
-                return "We found no {$tab} users between {$from} and {$to}.";
+                return __('app.empty.found_none_status_between', ['status' => $status, 'records' => $records, 'from' => $from, 'to' => $to]);
             })
             ->filters([
                 TrashedFilter::make(),
                 Filter::make('date')
                     ->schema([
-                        DatePicker::make('date_from'),
-                        DatePicker::make('date_to'),
+                        DatePicker::make('date_from')
+                            ->label(__('app.fields.date_from')),
+                        DatePicker::make('date_to')
+                            ->label(__('app.fields.date_to')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['date_from'],
-                                fn(Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
                             )
                             ->when(
                                 $data['date_to'],
-                                fn(Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
                             );
                     }),
             ])
@@ -124,49 +147,49 @@ class UserTable
                 ActionGroup::make([
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Status')
+                            ->label(__('app.fields.status'))
                             ->disabled()
                             ->color('gray'),
                         Action::make('inactive')
-                            ->label('Mark as Inactive')
+                            ->label(__('app.actions.mark_as_inactive'))
                             ->color('danger')
                             ->requiresConfirmation()
                             ->icon('heroicon-s-x-circle')
-                            ->action(fn(User $record) => tap($record, function ($record) {
+                            ->action(fn (User $record) => tap($record, function ($record) {
                                 $record->update(['status' => 'inactive']);
                                 Notification::make()
-                                    ->title('Inactive')
+                                    ->title(__('app.notifications.user_inactivated'))
                                     ->danger()
-                                    ->body("{$record->name} has been inactivated.")
+                                    ->body(__('app.notifications.user_inactivated_body', ['name' => $record->name]))
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value === 'active'),
+                            ->visible(fn ($record) => $record->status->value === 'active'),
                         Action::make('active')
-                            ->label('Mark as Active')
+                            ->label(__('app.actions.mark_as_active'))
                             ->color('success')
                             ->requiresConfirmation()
                             ->icon('heroicon-s-check-circle')
-                            ->action(fn(User $record) => tap($record, function ($record) {
+                            ->action(fn (User $record) => tap($record, function ($record) {
                                 $record->update(['status' => 'active']);
                                 Notification::make()
-                                    ->title('Active')
+                                    ->title(__('app.notifications.user_activated'))
                                     ->success()
-                                    ->body("{$record->name} has been activated.")
+                                    ->body(__('app.notifications.user_activated_body', ['name' => $record->name]))
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value === 'inactive'),
+                            ->visible(fn ($record) => $record->status->value === 'inactive'),
                     ])->dropdown(false),
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Record Actions')
+                            ->label(__('app.actions.record_actions'))
                             ->disabled()
                             ->color('gray'),
                         ViewAction::make(),
                         EditAction::make(),
                         DeleteAction::make(),
-                        RestoreAction::make()
-                    ])->dropdown(false)
-                ])
+                        RestoreAction::make(),
+                    ])->dropdown(false),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

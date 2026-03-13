@@ -2,24 +2,36 @@
 
 namespace App\Filament\Resources\FollowUps;
 
-use App\Models\FollowUp;
-use Filament\Tables\Table;
-use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
-use App\Filament\Resources\FollowUps\Tables\FollowUpTable;
 use App\Filament\Resources\FollowUps\Pages\ListFollowUps;
 use App\Filament\Resources\FollowUps\Schemas\FollowUpForm;
 use App\Filament\Resources\FollowUps\Schemas\FollowUpInfolist;
+use App\Filament\Resources\FollowUps\Tables\FollowUpTable;
+use App\Models\FollowUp;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 
 class FollowUpResource extends Resource
 {
     protected static ?string $model = FollowUp::class;
 
+    public static function getModelLabel(): string
+    {
+        return __('app.resources.follow_ups.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.resources.follow_ups.plural');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return static::getPluralModelLabel();
+    }
+
     /**
      * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function form(Schema $schema): Schema
     {

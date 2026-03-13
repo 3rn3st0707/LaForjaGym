@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\Enquiries\Pages;
 
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Enquiries\EnquiryResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use App\Filament\Resources\Enquiries\EnquiryResource;
-use Filament\Actions;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditEnquiry extends EditRecord
@@ -16,7 +15,7 @@ class EditEnquiry extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Edit ' . $this->record->name;
+        return __('app.actions.edit', ['resource' => EnquiryResource::getModelLabel()]);
     }
 
     protected function getHeaderActions(): array
@@ -32,8 +31,8 @@ class EditEnquiry extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            'Sales',
-            EnquiryResource::getUrl('index')   => 'Enquiries',
+            __('app.navigation.groups.sales'),
+            EnquiryResource::getUrl('index') => EnquiryResource::getNavigationLabel(),
             $this->record->name,
         ];
     }

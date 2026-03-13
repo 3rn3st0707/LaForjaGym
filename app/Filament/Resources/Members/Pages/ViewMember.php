@@ -15,21 +15,24 @@ class ViewMember extends ViewRecord
     {
         return [
             EditAction::make(),
-            DeleteAction::make()
+            DeleteAction::make(),
         ];
     }
 
     public function getTitle(): string
     {
-        return 'Member ' . $this->record->name;
+        return __('app.titles.record', [
+            'resource' => MemberResource::getModelLabel(),
+            'name' => $this->record->name,
+        ]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            MemberResource::getUrl('index')   => 'Members',
-            $this->record->name
+            __('app.navigation.groups.memberships'),
+            MemberResource::getUrl('index') => MemberResource::getNavigationLabel(),
+            $this->record->name,
         ];
     }
 }

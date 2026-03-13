@@ -27,18 +27,18 @@ class CreateMember extends CreateRecord
             if ($enquiry) {
                 $this->form->fill([
                     ...$this->data,
-                    'name'    => $enquiry->name,
-                    'email'   => $enquiry->email,
+                    'name' => $enquiry->name,
+                    'email' => $enquiry->email,
                     'contact' => $enquiry->contact,
-                    'gender'  => $enquiry->gender,
-                    'dob'     => $enquiry->dob,
+                    'gender' => $enquiry->gender,
+                    'dob' => $enquiry->dob,
                     'address' => $enquiry->address,
                     'country' => $enquiry->country,
-                    'city'    => $enquiry->city,
-                    'state'   => $enquiry->state,
+                    'city' => $enquiry->city,
+                    'state' => $enquiry->state,
                     'pincode' => $enquiry->pincode,
-                    'source'  => $enquiry->source,
-                    'goal'    => $enquiry->goal,
+                    'source' => $enquiry->source,
+                    'goal' => $enquiry->goal,
                 ]);
             }
         }
@@ -55,22 +55,22 @@ class CreateMember extends CreateRecord
             ->update(['status' => 'member']);
 
         Notification::make()
-            ->title('Member Created')
-            ->body('Enquiry has been successfully converted to a member.')
+            ->title(__('app.notifications.member_created'))
+            ->body(__('app.notifications.enquiry_converted_to_member'))
             ->success()
             ->send();
     }
 
     public function getTitle(): string
     {
-        return 'New Member';
+        return __('app.actions.new', ['resource' => MemberResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            MemberResource::getUrl('index')   => 'Members',
+            __('app.navigation.groups.memberships'),
+            MemberResource::getUrl('index') => MemberResource::getNavigationLabel(),
         ];
     }
 }

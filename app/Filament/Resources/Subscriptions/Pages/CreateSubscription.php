@@ -13,14 +13,14 @@ class CreateSubscription extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'New Subscription';
+        return __('app.actions.new', ['resource' => SubscriptionResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            SubscriptionResource::getUrl('index')   => 'Subscriptions',
+            __('app.navigation.groups.memberships'),
+            SubscriptionResource::getUrl('index') => SubscriptionResource::getNavigationLabel(),
         ];
     }
 }

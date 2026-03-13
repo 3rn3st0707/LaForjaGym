@@ -139,11 +139,11 @@ it('shows a friendly error state when the invoice is missing required data', fun
         ->actingAs($user)
         ->get(route('invoices.preview', $invoice))
         ->assertOk()
-        ->assertSee('Invoice can’t be generated');
+        ->assertSee(__('app.invoices.error.heading'));
 
     $this
         ->actingAs($user)
         ->get(route('invoices.download', $invoice))
         ->assertStatus(422)
-        ->assertSee('Invoice can’t be generated');
+        ->assertSee(__('app.invoices.error.heading'));
 });

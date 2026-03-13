@@ -4,21 +4,18 @@ namespace App\Filament\Resources\Plans\Schemas;
 
 use App\Enums\Status;
 use App\Helpers\Helpers;
-use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\HtmlString;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 
 class PlanForm
 {
     /**
      * Configure the plan form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -38,44 +35,45 @@ class PlanForm
                                 'label' => $status->getLabel(),
                             ]
                         );
+
                         return new HtmlString($html);
                     })
                     ->schema([
                         TextInput::make('name')
-                            ->label('Name')
-                            ->placeholder('Name of the plan')
-                            ->unique(ignoreRecord: true,)
+                            ->label(__('app.fields.name'))
+                            ->placeholder(__('app.placeholders.plan_name'))
+                            ->unique(ignoreRecord: true)
                             ->required()
                             ->columnSpanFull(),
                         TextInput::make('code')
-                            ->placeholder('Code for the plan')
-                            ->label('Code')
+                            ->placeholder(__('app.placeholders.plan_code'))
+                            ->label(__('app.fields.code'))
                             ->unique(ignoreRecord: true)
                             ->required(),
                         Select::make('service_id')
-                            ->label('Service')
+                            ->label(__('app.fields.service'))
                             ->relationship(name: 'service', titleAttribute: 'name')
-                            ->placeholder('Select service')
+                            ->placeholder(__('app.placeholders.select_service'))
                             ->required()
                             ->columnSpan(2),
                         TextInput::make('days')
                             ->required()
-                            ->placeholder('Number of days for the plan')
+                            ->placeholder(__('app.placeholders.plan_days'))
                             ->numeric()
-                            ->label('Days')
+                            ->label(__('app.fields.days'))
                             ->columnSpan(1),
                         TextInput::make('amount')
-                            ->placeholder('Enter amount of the plan')
+                            ->placeholder(__('app.placeholders.plan_amount'))
                             ->numeric()
                             ->prefix(Helpers::getCurrencySymbol())
-                            ->label('Amount')
+                            ->label(__('app.fields.amount'))
                             ->required()
                             ->columnSpan(2),
                         TextInput::make('description')
-                            ->placeholder('Brief description of the plan')
-                            ->label('Description')
-                            ->columnSpanFull()
-                    ])->columns(3)
+                            ->placeholder(__('app.placeholders.plan_description'))
+                            ->label(__('app.fields.description'))
+                            ->columnSpanFull(),
+                    ])->columns(3),
             ]);
     }
 }

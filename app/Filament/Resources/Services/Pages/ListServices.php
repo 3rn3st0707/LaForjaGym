@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\Services\Pages;
 
-use Filament\Actions\CreateAction;
 use App\Filament\Resources\Services\ServiceResource;
 use App\Models\Service;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListServices extends ListRecords
@@ -17,7 +16,8 @@ class ListServices extends ListRecords
         return [
             CreateAction::make()
                 ->icon('heroicon-m-plus')
-                ->modalHeading('New service')
+                ->label(__('app.actions.new', ['resource' => ServiceResource::getModelLabel()]))
+                ->modalHeading(__('app.actions.new', ['resource' => ServiceResource::getModelLabel()]))
                 ->modalWidth('sm')
                 ->createAnother(false)
                 ->visible(Service::exists()),
@@ -27,8 +27,8 @@ class ListServices extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            'Services',
+            __('app.navigation.groups.memberships'),
+            ServiceResource::getNavigationLabel(),
         ];
     }
 }

@@ -5,66 +5,72 @@ namespace App\Filament\Resources\Enquiries\Schemas;
 use App\Helpers\Helpers;
 use App\Models\Service;
 use App\Models\User;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Group;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Blade;
 
 class EnquiryForm
 {
     /**
      * Configure the enquiry form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->columns(1)
             ->components([
-                Section::make('Details')
+                Section::make(__('app.ui.details'))
                     ->schema([
                         TextInput::make('name')
+                            ->label(__('app.fields.name'))
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('John Doe'),
+                            ->placeholder(__('app.placeholders.example_full_name')),
                         TextInput::make('email')
+                            ->label(__('app.fields.email'))
                             ->email()
                             ->required()
                             ->live()
-                            ->placeholder('user@example.com')
+                            ->placeholder(__('app.placeholders.example_email'))
                             ->unique('enquiries', 'email', ignoreRecord: true),
-                        TextInput::make('contact')->tel()->required()->placeholder('+91 555-123-4567'),
+                        TextInput::make('contact')
+                            ->label(__('app.fields.contact'))
+                            ->tel()
+                            ->required()
+                            ->placeholder(__('app.placeholders.example_phone')),
                         DatePicker::make('dob')
                             ->required()
-                            ->label('Date of Birth'),
+                            ->label(__('app.fields.dob')),
                         DatePicker::make('date')
+                            ->label(__('app.fields.date'))
                             ->default(now()),
                         Radio::make('gender')
                             ->options([
-                                'male' => 'Male',
-                                'female' => 'Female',
-                                'other' => 'Other',
+                                'male' => __('app.options.gender.male'),
+                                'female' => __('app.options.gender.female'),
+                                'other' => __('app.options.gender.other'),
                             ])
+                            ->label(__('app.fields.gender'))
                             ->default('male')
                             ->inline()
                             ->inlineLabel(false)
                             ->required(),
                         Select::make('user_id')
-                            ->label('Lead Owner')
-                            ->placeholder('Select lead owner')
+                            ->label(__('app.fields.lead_owner'))
+                            ->placeholder(__('app.placeholders.select_lead_owner'))
                             ->relationship('user', 'name')
                             ->required()
                             ->getOptionLabelFromRecordUsing(function (User $record): string {
                                 $name = html_entity_decode($record->name, ENT_QUOTES, 'UTF-8');
-                                $url  = !empty($record->photo) ? e($record->photo) : "https://ui-avatars.com/api/?background=000&color=fff&name={$name}";
+                                $url = ! empty($record->photo) ? e($record->photo) : "https://ui-avatars.com/api/?background=000&color=fff&name={$name}";
+
                                 return Blade::render(
                                     '<div class="flex items-center gap-2 h-9">
                                     <x-filament::avatar src="{{ $url }}" alt="{{ $name }}" size="sm" />
@@ -75,70 +81,74 @@ class EnquiryForm
                             })
                             ->allowHtml(),
                         DatePicker::make('start_by')
+                            ->label(__('app.fields.start_by'))
                             ->minDate(now())
                             ->placeholder(now()->format('d-m-Y')),
                     ])->columns(3)->columnSpanFull(),
-                Section::make('Location')
+                Section::make(__('app.ui.location'))
                     ->schema([
                         Textarea::make('address')
+                            ->label(__('app.fields.address'))
                             ->required()
-                            ->placeholder('Room No./Wing, Building/Apt. name, street name'),
+                            ->placeholder(__('app.placeholders.address_example')),
                         Group::make()
                             ->schema([
                                 Select::make('country')
-                                    ->label('Country')
-                                    ->placeholder('Select country')
+                                    ->label(__('app.fields.country'))
+                                    ->placeholder(__('app.placeholders.select_country'))
                                     ->options(Helpers::getCountries())
                                     ->required()
                                     ->reactive()
-                                    ->afterStateUpdated(fn($state, callable $set) => [
+                                    ->afterStateUpdated(fn ($state, callable $set) => [
                                         $set('state', null),
                                         $set('city', null),
                                     ]),
                                 Select::make('state')
-                                    ->label('State')
-                                    ->placeholder('Select state')
-                                    ->options(fn($get) => Helpers::getStates($get('country')))
+                                    ->label(__('app.fields.state'))
+                                    ->placeholder(__('app.placeholders.select_state'))
+                                    ->options(fn ($get) => Helpers::getStates($get('country')))
                                     ->searchable()
                                     ->reactive(),
                                 Select::make('city')
-                                    ->label('City')
-                                    ->placeholder('Select city')
-                                    ->options(fn($get) => Helpers::getCities($get('state')))
+                                    ->label(__('app.fields.city'))
+                                    ->placeholder(__('app.placeholders.select_city'))
+                                    ->options(fn ($get) => Helpers::getCities($get('state')))
                                     ->searchable()
                                     ->reactive(),
                                 TextInput::make('pincode')
+                                    ->label(__('app.fields.pincode'))
                                     ->numeric()
                                     ->required()
-                                    ->placeholder('Enter PIN code'),
+                                    ->placeholder(__('app.placeholders.pincode')),
                             ])->columns(4),
                     ]),
-                Section::make('Choose your Preferences')
+                Section::make(__('app.ui.preferences'))
                     ->schema([
                         Select::make('interested_in')
-                            ->label('Interested In')
+                            ->label(__('app.fields.interested_in'))
                             ->multiple()
-                            ->placeholder('Select services')
-                            ->options(fn() => Service::pluck('name', 'name')->toArray()),
+                            ->placeholder(__('app.placeholders.select_services'))
+                            ->options(fn () => Service::pluck('name', 'name')->toArray()),
                         Select::make('source')
                             ->options([
-                                'promotions' => 'Promotions',
-                                'word_of_mouth' => 'Word of mouth',
-                                'others' => 'Others'
+                                'promotions' => __('app.options.source.promotions'),
+                                'word_of_mouth' => __('app.options.source.word_of_mouth'),
+                                'others' => __('app.options.source.others'),
                             ])->default('promotions')
+                            ->label(__('app.fields.source'))
                             ->selectablePlaceholder(false),
                         Select::make('goal')
                             ->options([
-                                'fitness' => 'Fitness',
-                                'body_building' => 'Body Building',
-                                'fatloss' => 'Fatloss',
-                                'weightgain' => 'Weightgain',
-                                'others' => 'Others'
+                                'fitness' => __('app.options.goal.fitness'),
+                                'body_building' => __('app.options.goal.body_building'),
+                                'fatloss' => __('app.options.goal.fatloss'),
+                                'weightgain' => __('app.options.goal.weightgain'),
+                                'others' => __('app.options.goal.others'),
                             ])->default('fitness')
-                            ->label('Goal ?')
+                            ->label(__('app.fields.goal'))
                             ->selectablePlaceholder(false),
                     ])->columns(3),
-                Section::make('Follow Details')
+                Section::make(__('app.ui.follow_details'))
                     ->schema([
                         Repeater::make('followUps')
                             ->relationship('followUps')
@@ -149,22 +159,22 @@ class EnquiryForm
                             ->schema([
                                 Select::make('method')
                                     ->options([
-                                        'call' => 'Call',
-                                        'email' => 'Email',
-                                        'in_person' => 'In person',
-                                        'whatsapp' => 'WhatsApp',
-                                        'other' => 'Others'
+                                        'call' => __('app.options.follow_up_method.call'),
+                                        'email' => __('app.options.follow_up_method.email'),
+                                        'in_person' => __('app.options.follow_up_method.in_person'),
+                                        'whatsapp' => __('app.options.follow_up_method.whatsapp'),
+                                        'other' => __('app.options.follow_up_method.other'),
                                     ])->default('call')
                                     ->required()
-                                    ->label('Follow-up method')
-                                    ->placeholder('Select follow up method'),
+                                    ->label(__('app.fields.follow_up_method'))
+                                    ->placeholder(__('app.placeholders.select_follow_up_method')),
                                 DatePicker::make('schedule_date')
-                                    ->label('Due Date')
+                                    ->label(__('app.fields.due_date'))
                                     ->required(),
                             ])
                             ->columns(2)
                             ->maxItems(1)
-                            ->deletable(false)
+                            ->deletable(false),
                     ])
                     ->hiddenOn('edit'),
             ]);

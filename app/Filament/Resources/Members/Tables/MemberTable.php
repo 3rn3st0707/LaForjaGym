@@ -2,34 +2,31 @@
 
 namespace App\Filament\Resources\Members\Tables;
 
+use App\Models\Member;
 use Carbon\Carbon;
-use Filament\Actions\ActionGroup;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\CreateAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
-use Filament\Tables\Filters\Filter;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Notifications\Notification;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
-use App\Models\Member;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MemberTable
 {
     /**
      * Configure the member table schema.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function configure(Table $table): Table
     {
@@ -41,96 +38,101 @@ class MemberTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 ImageColumn::make('photo')
                     ->circular()
-                    ->defaultImageUrl(fn(Member $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name=' . $record->name),
+                    ->defaultImageUrl(fn (Member $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name),
                 TextColumn::make('code')
                     ->searchable(),
                 TextColumn::make('name')
                     ->searchable()
-                    ->label('Name'),
+                    ->label(__('app.fields.name')),
                 TextColumn::make('email')
                     ->searchable()
-                    ->label('Email'),
+                    ->label(__('app.fields.email')),
                 TextColumn::make('gender')
                     ->searchable()
-                    ->label('Gender'),
+                    ->label(__('app.fields.gender')),
                 TextColumn::make('contact')
                     ->searchable()
-                    ->label('Contact'),
+                    ->label(__('app.fields.contact')),
                 TextColumn::make('emergency_contact')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->label('Emergency Contact'),
+                    ->label(__('app.fields.emergency_contact')),
                 TextColumn::make('created_at')
                     ->sortable()
                     ->date('d-m-Y')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->label('Date'),
+                    ->label(__('app.fields.date')),
                 TextColumn::make('status')
                     ->badge()
-                    ->label('Status'),
+                    ->label(__('app.fields.status')),
             ])
             ->emptyStateIcon('heroicon-o-user-group')
             ->emptyStateHeading(function ($livewire): string {
-                $dates       = $livewire->getTableFilterState('date') ?? [];
+                $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab         = $livewire->activeTab;
-                $heading     = [
-                    'active' => 'No Active Members',
-                    'inactive' => 'No Inactive Members',
-                ][$tab] ?? 'No Members';
+                $records = __('app.resources.members.plural');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$from && !$to) {
-                    return $heading;
+                if (! $from && ! $to) {
+                    return $status
+                        ? __('app.empty.no_status_records', ['status' => $status, 'records' => $records])
+                        : __('app.empty.no_records', ['records' => $records]);
                 }
 
                 if ($tab === 'all') {
-                    return 'No Members in Date Range';
+                    return __('app.empty.no_records_in_range', ['records' => $records]);
                 }
+
+                $base = __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
 
                 return Member::where('status', $tab)->exists()
-                    ? ($heading . ' in Date Range')
-                    : $heading;
+                    ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
+                    : $base;
             })
             ->emptyStateDescription(function ($livewire): ?string {
-                $dates               = $livewire->getTableFilterState('date') ?? [];
-                [$fromRaw, $toRaw]   = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab                 = $livewire->activeTab;
-                $defaultDescriptions = [
-                    'active' => 'There are no members currently active.',
-                    'inactive' => 'There are no members marked as inactive.',
-                ];
+                $dates = $livewire->getTableFilterState('date') ?? [];
+                [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
+                $records = __('app.resources.members.plural');
+                $record = __('app.resources.members.singular');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
-                if (!$fromRaw && !$toRaw) {
-                    return $defaultDescriptions[$tab] ?? 'Create a member to get started.';
+                if (! $fromRaw && ! $toRaw) {
+                    return $status
+                        ? __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status])
+                        : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : 'the beginning';
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : 'today';
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
 
                 if ($tab === 'all') {
-                    return "We found no members created between {$from} and {$to}.";
+                    return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
                 }
 
-                if (!Member::where('status', $tab)->exists()) {
-                    return $defaultDescriptions[$tab] ?? 'Create a member to get started.';
+                if (! Member::where('status', $tab)->exists()) {
+                    return __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status]);
                 }
 
-                return "We found no {$tab} members between {$from} and {$to}.";
+                return __('app.empty.found_none_status_between', ['status' => $status, 'records' => $records, 'from' => $from, 'to' => $to]);
             })
             ->emptyStateActions([
                 CreateAction::make()
                     ->icon('heroicon-o-plus')
-                    ->label('New member')
-                    ->hidden(fn() => Member::exists()),
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.members.singular')]))
+                    ->hidden(fn (): bool => Member::exists()),
             ])
             ->filters([
                 TrashedFilter::make(),
                 Filter::make('date')
                     ->schema([
                         DatePicker::make('date_from')
+                            ->label(__('app.fields.date_from'))
                             ->native(false)
                             ->suffixIcon('heroicon-m-calendar-days'),
                         DatePicker::make('date_to')
+                            ->label(__('app.fields.date_to'))
                             ->native(false)
                             ->suffixIcon('heroicon-m-calendar-days'),
                     ])
@@ -138,49 +140,49 @@ class MemberTable
                         return $query
                             ->when(
                                 $data['date_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['date_to'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
-                    })
+                    }),
             ])
             ->recordActions([
                 ActionGroup::make([
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Status')
+                            ->label(__('app.fields.status'))
                             ->disabled()
                             ->color('gray'),
                         Action::make('mark_as_active')
                             ->color('success')
-                            ->label('Mark as active')
+                            ->label(__('app.actions.mark_as_active'))
                             ->requiresConfirmation()
-                            ->action(fn(Member $record) => tap($record, function ($record) {
+                            ->action(fn (Member $record) => tap($record, function ($record) {
                                 $record->update(['status' => 'active']);
                                 Notification::make()
-                                    ->title('Member has been activated')
+                                    ->title(__('app.notifications.member_activated'))
                                     ->success()
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value === 'inactive'),
+                            ->visible(fn ($record) => $record->status->value === 'inactive'),
                         Action::make('mark_as_inactive')
                             ->color('danger')
-                            ->label('Mark as inactive')
+                            ->label(__('app.actions.mark_as_inactive'))
                             ->requiresConfirmation()
-                            ->action(fn(Member $record) => tap($record, function ($record) {
+                            ->action(fn (Member $record) => tap($record, function ($record) {
                                 $record->update(['status' => 'inactive']);
                                 Notification::make()
-                                    ->title('Member has been deactivated')
+                                    ->title(__('app.notifications.member_deactivated'))
                                     ->danger()
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value === 'active'),
+                            ->visible(fn ($record) => $record->status->value === 'active'),
                     ])->dropdown(false),
                     ActionGroup::make([
                         Action::make('heading_actions')
-                            ->label('Record Actions')
+                            ->label(__('app.actions.record_actions'))
                             ->disabled()
                             ->color('gray'),
                         ViewAction::make(),
@@ -188,7 +190,7 @@ class MemberTable
                         DeleteAction::make()->hiddenLabel(),
                     ])->dropdown(false),
                 ]),
-            ])->recordUrl(fn($record): string => route('filament.admin.resources.members.view', $record->id))
+            ])->recordUrl(fn ($record): string => route('filament.admin.resources.members.view', $record->id))
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

@@ -11,14 +11,14 @@ class CreateInvoice extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'New Invoice';
+        return __('app.actions.new', ['resource' => InvoiceResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Billing',
-            InvoiceResource::getUrl('index')   => 'Invoices',
+            __('app.navigation.groups.billing'),
+            InvoiceResource::getUrl('index') => InvoiceResource::getNavigationLabel(),
         ];
     }
 }

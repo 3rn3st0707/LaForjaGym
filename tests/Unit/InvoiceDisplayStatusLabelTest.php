@@ -7,7 +7,7 @@ it('shows issued label for issued invoices', function (): void {
         'status' => 'issued',
     ]);
 
-    expect($invoice->getDisplayStatusLabel())->toBe('Issued');
+    expect($invoice->getDisplayStatusLabel())->toBe(__('app.status.issued'));
 });
 
 it('shows paid label for paid invoices', function (): void {
@@ -15,5 +15,5 @@ it('shows paid label for paid invoices', function (): void {
         'status' => 'paid',
     ]);
 
-    expect($invoice->getDisplayStatusLabel())->toBe('Paid');
+    expect($invoice->getDisplayStatusLabel())->toBe(__('app.status.paid'));
 });

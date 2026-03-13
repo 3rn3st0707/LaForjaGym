@@ -2,18 +2,33 @@
 
 namespace App\Filament\Resources\Services;
 
-use Filament\Schemas\Schema;
 use App\Filament\Resources\Services\Pages\ListServices;
 use App\Filament\Resources\Services\Schemas\ServiceForm;
 use App\Filament\Resources\Services\Schemas\ServiceInfolist;
 use App\Filament\Resources\Services\Tables\ServiceTable;
 use App\Models\Service;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
 class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
+
+    public static function getModelLabel(): string
+    {
+        return __('app.resources.services.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.resources.services.plural');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return static::getPluralModelLabel();
+    }
 
     public static function form(Schema $schema): Schema
     {

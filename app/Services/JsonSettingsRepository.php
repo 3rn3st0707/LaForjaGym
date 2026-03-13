@@ -124,6 +124,13 @@ class JsonSettingsRepository implements SettingsRepository
         }
 
         if (
+            ! array_key_exists('locale', $settings['general']) ||
+            (! is_string($settings['general']['locale']) && $settings['general']['locale'] !== null)
+        ) {
+            $settings['general']['locale'] = null;
+        }
+
+        if (
             ! array_key_exists('email', $settings['notifications']) ||
             ! is_array($settings['notifications']['email'])
         ) {

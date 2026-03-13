@@ -34,44 +34,47 @@ class UserInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
-                        return new HtmlString("Details " . $html);
+
+                        return new HtmlString(e(__('app.ui.details')).' '.$html);
                     })
                     ->schema([
                         ImageEntry::make('photo')
                             ->hiddenLabel()
-                            ->defaultImageUrl(fn(User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name=' . $record->name)
+                            ->defaultImageUrl(fn (User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
                             ->size(180)
                             ->circular()
                             ->columnSpan(1),
                         Group::make()
                             ->schema([
-                                TextEntry::make('name'),
-                                TextEntry::make('email'),
-                                TextEntry::make('contact'),
-                                TextEntry::make('gender'),
+                                TextEntry::make('name')->label(__('app.fields.name')),
+                                TextEntry::make('email')->label(__('app.fields.email')),
+                                TextEntry::make('contact')->label(__('app.fields.contact')),
+                                TextEntry::make('gender')->label(__('app.fields.gender')),
                                 TextEntry::make('dob')
-                                    ->label('Date of Birth')
+                                    ->label(__('app.fields.dob'))
                                     ->date()
-                                    ->placeholder('N/A'),
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('roles.name')
+                                    ->label(__('app.fields.role'))
                                     ->formatStateUsing(
-                                        fn($state): string =>
-                                        Str::headline($state)
+                                        fn ($state): string => Str::headline($state)
                                     )
                                     ->badge(),
                             ])->columnSpan(4)->columns(3),
                     ])->columns(5),
-                Section::make('Location')
+                Section::make(__('app.ui.location'))
                     ->schema([
-                        TextEntry::make('address')->label('Address'),
+                        TextEntry::make('address')->label(__('app.fields.address')),
                         Group::make()
                             ->schema([
-                                TextEntry::make('country')->label('Country'),
+                                TextEntry::make('country')->label(__('app.fields.country')),
                                 TextEntry::make('state')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.state'))
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('city')
-                                    ->placeholder('N/A'),
-                                TextEntry::make('pincode')->label('PIN Code'),
+                                    ->label(__('app.fields.city'))
+                                    ->placeholder(__('app.placeholders.na')),
+                                TextEntry::make('pincode')->label(__('app.fields.pincode')),
                             ])
                             ->columns(4),
                     ]),

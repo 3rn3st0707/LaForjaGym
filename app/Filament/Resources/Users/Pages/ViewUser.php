@@ -13,22 +13,25 @@ class ViewUser extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'User ' . $this->record->name;
+        return __('app.titles.record', [
+            'resource' => UserResource::getModelLabel(),
+            'name' => $this->record->name,
+        ]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             EditAction::make(),
-            DeleteAction::make()
+            DeleteAction::make(),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Administration',
-            UserResource::getUrl('index')   => 'Users',
+            __('app.navigation.groups.administration'),
+            UserResource::getUrl('index') => UserResource::getNavigationLabel(),
             $this->record->name,
         ];
     }

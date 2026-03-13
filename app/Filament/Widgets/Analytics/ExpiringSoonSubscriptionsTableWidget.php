@@ -25,7 +25,7 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
 {
     protected static ?int $sort = -39;
 
-    protected static ?string $heading = 'Expiring Soon';
+    protected static ?string $heading = null;
 
     /**
      * @var int | string | array<string, int | null>
@@ -51,25 +51,33 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
             ->orderBy('end_date');
     }
 
+    private function formatDayCount(int $days): string
+    {
+        $unit = $days === 1 ? __('app.units.day') : __('app.units.days');
+
+        return "{$days} {$unit}";
+    }
+
     public function table(Table $table): Table
     {
         return $table
+            ->heading(__('app.widgets.expiring_soon'))
             ->query(fn (): Builder => $this->getExpiringSoonQuery())
             ->columns([
                 TextColumn::make('member.name')
-                    ->label('Member')
+                    ->label(__('app.fields.member'))
                     ->description(fn (Subscription $record): string => (string) ($record->member->code ?? ''))
                     ->wrap(),
                 TextColumn::make('plan.name')
-                    ->label('Plan')
+                    ->label(__('app.fields.plan'))
                     ->description(fn (Subscription $record): string => (string) ($record->plan->code ?? ''))
                     ->wrap(),
                 TextColumn::make('end_date')
-                    ->label('Ends')
+                    ->label(__('app.fields.end_date'))
                     ->date()
                     ->sortable(),
                 TextColumn::make('days_left')
-                    ->label('Days Left')
+                    ->label(__('app.widgets.days_left'))
                     ->alignRight()
                     ->state(function (Subscription $record): string {
                         $today = CarbonImmutable::today(config('app.timezone'));
@@ -77,17 +85,17 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
 
                         $days = max($today->diffInDays($endDate, false), 0);
 
-                        return $days === 1 ? '1 day' : "{$days} days";
+                        return $this->formatDayCount($days);
                     }),
             ])
             ->recordActions([
                 ActionGroup::make([
                     Action::make('renew')
-                        ->label('Renew')
+                        ->label(__('app.actions.renew'))
                         ->icon('heroicon-m-arrow-path')
                         ->color('success')
-                        ->modalHeading('Renew Subscription')
-                        ->modalSubmitActionLabel('Renew')
+                        ->modalHeading(__('app.titles.renew_subscription'))
+                        ->modalSubmitActionLabel(__('app.actions.renew'))
                         ->modalWidth('6xl')
                         ->closeModalByClickingAway(false)
                         ->visible(function (Subscription $record): bool {
@@ -110,8 +118,8 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
                         ->url(fn (Subscription $record): string => SubscriptionResource::getUrl('view', ['record' => $record])),
                 ]),
             ])
-            ->emptyStateHeading('No subscriptions expiring soon')
-            ->emptyStateDescription('You’re all set — nothing is ending in the next few days.')
+            ->emptyStateHeading(__('app.widgets.no_expiring_subscriptions'))
+            ->emptyStateDescription(__('app.widgets.no_expiring_subscriptions_description'))
             ->defaultPaginationPageOption(10)
             ->paginationPageOptions([10, 25, 50]);
     }

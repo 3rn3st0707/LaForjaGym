@@ -17,7 +17,7 @@ class ExpenseInfolist
         return $schema
             ->columns(1)
             ->components([
-                Fieldset::make('Expense Details')
+                Fieldset::make(__('app.titles.expense_details'))
                     ->label(function (Expense $record): HtmlString {
                         $status = $record->status;
                         $html = Blade::render(
@@ -29,34 +29,35 @@ class ExpenseInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
+
                         return new HtmlString($html);
                     })
                     ->schema([
                         TextEntry::make('name')
-                            ->label('Expense'),
+                            ->label(__('app.fields.expense')),
                         TextEntry::make('category')
-                            ->label('Category')
-                            ->formatStateUsing(fn (?string $state): string => Helpers::getExpenseCategoryLabel($state) ?? 'N/A'),
+                            ->label(__('app.fields.category'))
+                            ->formatStateUsing(fn (?string $state): string => Helpers::getExpenseCategoryLabel($state) ?? __('app.placeholders.na')),
                         TextEntry::make('vendor')
-                            ->label('Vendor')
-                            ->placeholder('N/A'),
+                            ->label(__('app.fields.vendor'))
+                            ->placeholder(__('app.placeholders.na')),
                         TextEntry::make('amount')
-                            ->label('Amount')
+                            ->label(__('app.fields.amount'))
                             ->money(Helpers::getCurrencyCode()),
                         TextEntry::make('date')
-                            ->label('Date')
+                            ->label(__('app.fields.date'))
                             ->date(),
                         TextEntry::make('due_date')
-                            ->label('Due Date')
+                            ->label(__('app.fields.due_date'))
                             ->date()
-                            ->placeholder('N/A'),
+                            ->placeholder(__('app.placeholders.na')),
                         TextEntry::make('paid_at')
-                            ->label('Paid at')
+                            ->label(__('app.fields.paid_at'))
                             ->dateTime()
-                            ->placeholder('N/A'),
+                            ->placeholder(__('app.placeholders.na')),
                         TextEntry::make('notes')
-                            ->label('Notes')
-                            ->placeholder('N/A')
+                            ->label(__('app.fields.note'))
+                            ->placeholder(__('app.placeholders.na'))
                             ->columnSpanFull(),
                     ]),
             ]);

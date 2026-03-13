@@ -31,22 +31,23 @@ class SubscriptionInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
-                        return new HtmlString('Details ' . $html);
+
+                        return new HtmlString(e(__('app.ui.details')).' '.$html);
                     })
                     ->schema([
                         TextEntry::make('member')
-                            ->label('Member')
+                            ->label(__('app.fields.member'))
                             ->columnSpan(2)
-                            ->formatStateUsing(fn($record): string => "{$record->member->code} – {$record->member->name}"),
+                            ->formatStateUsing(fn ($record): string => "{$record->member->code} – {$record->member->name}"),
                         TextEntry::make('plan')
-                            ->label('Plan')
+                            ->label(__('app.fields.plan'))
                             ->columnSpan(2)
-                            ->formatStateUsing(fn($record): string => "{$record->plan->code} – {$record->plan->name}"),
+                            ->formatStateUsing(fn ($record): string => "{$record->plan->code} – {$record->plan->name}"),
                         TextEntry::make('start_date')
-                            ->label('Start Date')
+                            ->label(__('app.fields.start_date'))
                             ->date(),
                         TextEntry::make('end_date')
-                            ->label('End Date')
+                            ->label(__('app.fields.end_date'))
                             ->date(),
                     ])->columns(6),
             ]);

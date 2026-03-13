@@ -142,36 +142,36 @@ HTML);
 
         return [
             Stat::make(
-                'Net Revenue',
+                __('app.widgets.net_revenue'),
                 $this->valueWithDelta(Helpers::formatCurrency($metrics['net_revenue']), $netRevenueDelta),
             )
                 ->icon('heroicon-o-banknotes')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.Helpers::formatCurrency($previous['net_revenue']).' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => Helpers::formatCurrency($previous['net_revenue'])]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'Total Collected',
+                __('app.widgets.total_collected'),
                 $this->valueWithDelta(Helpers::formatCurrency($metrics['collected']), $collectedDelta),
             )
                 ->icon('heroicon-o-arrow-down-tray')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.Helpers::formatCurrency($previous['collected']).' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => Helpers::formatCurrency($previous['collected'])]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'Outstanding Payments',
+                __('app.widgets.outstanding_payments'),
                 $this->valueWithDelta(Helpers::formatCurrency($metrics['outstanding']), $outstandingDelta),
             )
                 ->icon('heroicon-o-clock')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.Helpers::formatCurrency($previous['outstanding']).' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => Helpers::formatCurrency($previous['outstanding'])]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'Profit',
+                __('app.widgets.profit'),
                 $this->valueWithDelta(Helpers::formatCurrency($metrics['profit']), $profitDelta),
             )
                 ->icon('heroicon-o-chart-bar-square')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.Helpers::formatCurrency($previous['profit']).' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => Helpers::formatCurrency($previous['profit'])]))
                 ->descriptionColor('gray'),
         ];
     }

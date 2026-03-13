@@ -66,7 +66,7 @@ class MembershipOverviewSubscriptionsTableWidget extends TableWidget
 <div class="fi-ta-header flex flex-row items-center justify-between">
     <div>
         <h3 class="fi-ta-header-heading">
-            Membership
+            {{ $title }}
         </h3>
     </div>
 
@@ -78,7 +78,7 @@ class MembershipOverviewSubscriptionsTableWidget extends TableWidget
                 :outlined="$activeTab !== 'expiring'"
                 wire:click="$set('activeTab', 'expiring')"
             >
-                Expiring
+                {{ $expiringLabel }}
             </x-filament::button>
 
             <x-filament::button
@@ -87,7 +87,7 @@ class MembershipOverviewSubscriptionsTableWidget extends TableWidget
                 :outlined="$activeTab !== 'expired'"
                 wire:click="$set('activeTab', 'expired')"
             >
-                Expired
+                {{ $expiredLabel }}
             </x-filament::button>
         </x-filament::button.group>
     </div>
@@ -95,6 +95,9 @@ class MembershipOverviewSubscriptionsTableWidget extends TableWidget
 BLADE,
             [
                 'activeTab' => $this->activeTab,
+                'title' => __('app.navigation.groups.memberships'),
+                'expiringLabel' => __('app.status.expiring'),
+                'expiredLabel' => __('app.status.expired'),
             ],
         ));
     }
@@ -150,19 +153,19 @@ BLADE,
             ->query(fn (): Builder => $this->getActiveTabQuery()->limit(5))
             ->columns([
                 TextColumn::make('member.name')
-                    ->label('Member')
+                    ->label(__('app.fields.member'))
                     ->description(fn (Subscription $record): string => (string) ($record->member->code ?? ''))
                     ->wrap(),
                 TextColumn::make('plan.name')
-                    ->label('Plan')
+                    ->label(__('app.fields.plan'))
                     ->description(fn (Subscription $record): string => (string) ($record->plan->code ?? ''))
                     ->wrap(),
                 TextColumn::make('end_date')
-                    ->label('End Date')
+                    ->label(__('app.fields.end_date'))
                     ->date()
                     ->sortable(),
                 TextColumn::make('days')
-                    ->label(fn (): string => $this->activeTab === 'expired' ? 'Days Since' : 'Days Left')
+                    ->label(fn (): string => $this->activeTab === 'expired' ? __('app.widgets.days_since') : __('app.widgets.days_left'))
                     ->alignRight()
                     ->state(function (Subscription $record): string {
                         $today = CarbonImmutable::today(config('app.timezone'));
@@ -171,22 +174,26 @@ BLADE,
                         if ($this->activeTab === 'expired') {
                             $days = max($endDate->diffInDays($today, false), 0);
 
-                            return $days === 1 ? '1 day' : "{$days} days";
+                            $unit = $days === 1 ? __('app.units.day') : __('app.units.days');
+
+                            return "{$days} {$unit}";
                         }
 
                         $days = max($today->diffInDays($endDate, false), 0);
 
-                        return $days === 1 ? '1 day' : "{$days} days";
+                        $unit = $days === 1 ? __('app.units.day') : __('app.units.days');
+
+                        return "{$days} {$unit}";
                     }),
             ])
             ->recordActions([
                 ActionGroup::make([
                     Action::make('renew')
-                        ->label('Renew')
+                        ->label(__('app.actions.renew'))
                         ->icon('heroicon-m-arrow-path')
                         ->color('success')
-                        ->modalHeading('Renew Subscription')
-                        ->modalSubmitActionLabel('Renew')
+                        ->modalHeading(__('app.titles.renew_subscription'))
+                        ->modalSubmitActionLabel(__('app.actions.renew'))
                         ->modalWidth('6xl')
                         ->closeModalByClickingAway(false)
                         ->visible(function (Subscription $record) use ($today): bool {
@@ -208,11 +215,11 @@ BLADE,
                 ]),
             ])
             ->emptyStateHeading(fn (): string => $this->activeTab === 'expired'
-                ? 'No expired memberships'
-                : 'No memberships expiring soon')
+                ? __('app.widgets.no_expired_memberships')
+                : __('app.widgets.no_expiring_memberships'))
             ->emptyStateDescription(fn (): string => $this->activeTab === 'expired'
-                ? 'There are no memberships that have ended yet.'
-                : 'You’re all set — nothing is ending in the next few days.')
+                ? __('app.widgets.no_expired_memberships_description')
+                : __('app.widgets.no_expiring_memberships_description'))
             ->defaultPaginationPageOption(5);
     }
 }

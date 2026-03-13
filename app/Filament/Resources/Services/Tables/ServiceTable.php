@@ -3,22 +3,19 @@
 namespace App\Filament\Resources\Services\Tables;
 
 use App\Models\Service;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\CreateAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class ServiceTable
 {
     /**
      * Configure the service table schema.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function configure(Table $table): Table
     {
@@ -29,11 +26,11 @@ class ServiceTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
                     ->searchable()
-                    ->label('Name')
+                    ->label(__('app.fields.name'))
                     ->sortable(),
                 TextColumn::make('description')
                     ->searchable()
-                    ->label('Description'),
+                    ->label(__('app.fields.description')),
                 TextColumn::make('created_at')
                     ->searchable()
                     ->date('d-m-Y')
@@ -41,16 +38,16 @@ class ServiceTable
             ])
             ->defaultSort('id', 'desc')
             ->emptyStateIcon('heroicon-o-cog-8-tooth')
-            ->emptyStateHeading('No Services')
-            ->emptyStateDescription('Create a service to get started.')
+            ->emptyStateHeading(__('app.empty.no_records', ['records' => __('app.resources.services.plural')]))
+            ->emptyStateDescription(__('app.empty.create_to_get_started', ['resource' => __('app.resources.services.singular')]))
             ->emptyStateActions([
                 CreateAction::make()
                     ->icon('heroicon-o-plus')
-                    ->label('New service')
-                    ->modalHeading('New service')
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.services.singular')]))
+                    ->modalHeading(__('app.actions.new', ['resource' => __('app.resources.services.singular')]))
                     ->modalWidth('sm')
                     ->createAnother(false)
-                    ->hidden(fn() => Service::exists()),
+                    ->hidden(fn (): bool => Service::exists()),
             ])
             ->recordActions([
                 ViewAction::make()

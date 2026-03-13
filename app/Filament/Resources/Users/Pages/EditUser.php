@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Users\UserResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use App\Filament\Resources\Users\UserResource;
-use Filament\Actions;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditUser extends EditRecord
@@ -16,7 +15,7 @@ class EditUser extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Edit ' . $this->record->name;
+        return __('app.actions.edit', ['resource' => UserResource::getModelLabel()]);
     }
 
     protected function getHeaderActions(): array
@@ -32,8 +31,8 @@ class EditUser extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            'Administration',
-            UserResource::getUrl('index')   => 'Users',
+            __('app.navigation.groups.administration'),
+            UserResource::getUrl('index') => UserResource::getNavigationLabel(),
             $this->record->name,
         ];
     }

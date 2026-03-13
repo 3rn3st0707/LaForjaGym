@@ -2,44 +2,33 @@
 
 namespace App\Filament\Resources\Subscriptions\RelationManagers;
 
-use Filament\Schemas\Schema;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class InvoicesRelationManager extends RelationManager
 {
     protected static string $relationship = 'invoices';
 
-    protected static ?string $title = 'Manage Invoices';
+    protected static ?string $title = null;
 
-    /**
-     * Determine if the relation manager is read-only.
-     *
-     * @return bool Returns false, indicating the relation manager is not read-only.
-     */
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('app.resources.invoices.plural');
+    }
+
     public function isReadOnly(): bool
     {
         return false;
     }
 
-    /**
-     * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
-     */
     public function form(Schema $schema): Schema
     {
         return InvoiceResource::form($schema);
     }
 
-    /**
-     * Define the table for listing records in the resource.
-     *
-     * @param Table $table
-     * @return Table
-     */
     public function table(Table $table): Table
     {
         return InvoiceResource::table($table)

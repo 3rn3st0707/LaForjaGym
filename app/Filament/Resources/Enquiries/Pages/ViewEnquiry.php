@@ -16,7 +16,10 @@ class ViewEnquiry extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Enquiry ' . $this->record->name;
+        return __('app.titles.record', [
+            'resource' => EnquiryResource::getModelLabel(),
+            'name' => $this->record->name,
+        ]);
     }
 
     protected function getHeaderActions(): array
@@ -25,12 +28,12 @@ class ViewEnquiry extends ViewRecord
             EditAction::make(),
             DeleteAction::make(),
             Action::make('convert_to_member')
-                ->label('Convert to Member')
+                ->label(__('app.actions.convert_to_member'))
                 ->icon('heroicon-s-arrows-right-left')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn(Enquiry $record) => $record->status === 'lead')
-                ->url(fn(Enquiry $record) => MemberResource::getUrl(
+                ->visible(fn (Enquiry $record) => $record->status === 'lead')
+                ->url(fn (Enquiry $record) => MemberResource::getUrl(
                     'create',
                     ['enquiry_id' => $record->id],
                 )),
@@ -40,8 +43,8 @@ class ViewEnquiry extends ViewRecord
     public function getBreadcrumbs(): array
     {
         return [
-            'Sales',
-            EnquiryResource::getUrl('index')   => 'Enquiries',
+            __('app.navigation.groups.sales'),
+            EnquiryResource::getUrl('index') => EnquiryResource::getNavigationLabel(),
             $this->record->name,
         ];
     }

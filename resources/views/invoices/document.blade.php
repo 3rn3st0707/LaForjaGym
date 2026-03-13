@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Invoice {{ $invoice->number }}</title>
+    <title>{{ __('app.invoices.pdf.title', ['number' => $invoice->number]) }}</title>
     @php
         /**
          * Inter font files are included locally for PDF rendering.
@@ -348,7 +348,7 @@
                     </td>
                     <td class="header-right">
                         <span class="badge {{ $statusBadgeClass }}">{{ $statusLabel }}</span>
-                        <div class="invoice-meta">Invoice #{{ $invoice->number }}</div>
+                        <div class="invoice-meta">{{ __('app.invoices.pdf.invoice_number', ['number' => $invoice->number]) }}</div>
                     </td>
                 </tr>
             </table>
@@ -360,11 +360,11 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td style="width: 60%; vertical-align: top; padding-right: 18px;">
-                        <p class="label">Member Details</p>
+                        <p class="label">{{ __('app.invoices.pdf.member_details') }}</p>
                         <p class="value-title">{{ $member?->name ?? '-' }}</p>
                         <div class="value-line">
                             @if (filled($member?->code))
-                            <div>ID: {{ $member->code }}</div>
+                            <div>{{ __('app.fields.id') }}: {{ $member->code }}</div>
                             @endif
                             @if (filled($member?->email))
                             <div>{{ $member->email }}</div>
@@ -374,37 +374,37 @@
                             @endif
                         </div>
                     </td>
-                    <td style="width: 40%; vertical-align: top; text-align: right;">
-                        <p class="label">Billing Cycle</p>
-                        <p class="value-title">
-                            {{ optional($invoice->date)->format('F d, Y') }}
-                        </p>
-                        <div class="value-line">
-                            @if ($subscription)
-                            <div class="muted">
-                                {{ optional($subscription->start_date)->format('d M Y') }} - {{ optional($subscription->end_date)->format('d M Y') }}
-                            </div>
-                            @endif
-                        </div>
-                    </td>
+	                    <td style="width: 40%; vertical-align: top; text-align: right;">
+	                        <p class="label">{{ __('app.invoices.pdf.billing_cycle') }}</p>
+	                        <p class="value-title">
+	                            {{ optional($invoice->date)->translatedFormat('F d, Y') }}
+	                        </p>
+	                        <div class="value-line">
+	                            @if ($subscription)
+	                            <div class="muted">
+	                                {{ optional($subscription->start_date)->translatedFormat('d M Y') }} - {{ optional($subscription->end_date)->translatedFormat('d M Y') }}
+	                            </div>
+	                            @endif
+	                        </div>
+	                    </td>
                 </tr>
             </table>
 
             <table class="items" aria-label="Invoice line items">
                 <thead>
                     <tr>
-                        <th>Plan</th>
-                        <th class="right" style="width: 0px;">Amount</th>
+                        <th>{{ __('app.fields.plan') }}</th>
+                        <th class="right" style="width: 0px;">{{ __('app.fields.amount') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>
-                            <p class="desc-title">{{ $plan?->name ?? 'Membership' }}</p>
+                            <p class="desc-title">{{ $plan?->name ?? __('app.invoices.pdf.membership') }}</p>
                             @if (filled($plan?->description))
                             <div class="desc-sub">{{ $plan->description }}</div>
                             @elseif ($subscription)
-                            <div class="desc-sub">Membership access for the selected billing cycle.</div>
+                            <div class="desc-sub">{{ __('app.invoices.pdf.membership_description') }}</div>
                             @endif
                         </td>
                         <td class="right" style="font-size: 16px; font-weight: 800; text-align: right;"><span class="money">{{ \App\Helpers\Helpers::formatCurrency($gross) }}</span></td>
@@ -414,7 +414,7 @@
 
             @if (filled($invoice->discount_note))
             <div class="callout" aria-label="Discount note">
-                <p class="callout-title">Discount Note</p>
+                <p class="callout-title">{{ __('app.fields.discount_note') }}</p>
                 <p class="callout-body">{{ $invoice->discount_note }}</p>
             </div>
             @endif
@@ -426,26 +426,26 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td>Subtotal</td>
+                        <td>{{ __('app.invoices.pdf.subtotal') }}</td>
                         <td class="right strong"><span class="money">{{ \App\Helpers\Helpers::formatCurrency($gross) }}</span></td>
                     </tr>
                     @if ((float) ($invoice->discount_amount ?? 0) > 0)
                     <tr>
-                        <td>Discount</td>
+                        <td>{{ __('app.fields.discount') }}</td>
                         <td class="right strong">-<span class="money">{{ \App\Helpers\Helpers::formatCurrency($invoice->discount_amount) }}</span></td>
                     </tr>
                     @endif
                     @if ((float) ($invoice->tax ?? 0) > 0)
                     <tr>
                         <td>
-                            Tax @if ($taxRatePercentLabel !== '0') ({{ $taxRatePercentLabel }}%) @endif
+                            {{ __('app.fields.tax') }} @if ($taxRatePercentLabel !== '0') ({{ $taxRatePercentLabel }}%) @endif
                         </td>
                         <td class="right strong"><span class="money">{{ \App\Helpers\Helpers::formatCurrency($invoice->tax) }}</span></td>
                     </tr>
                     @endif
                     @if ($paidAmount > 0 && $dueAmount > 0)
                     <tr>
-                        <td>Paid</td>
+                        <td>{{ __('app.fields.paid') }}</td>
                         <td class="right strong"><span class="money">{{ \App\Helpers\Helpers::formatCurrency($paidAmount) }}</span></td>
                     </tr>
                     @endif
@@ -456,7 +456,7 @@
                     </tr>
                     <tr class="total-row">
                         <td>
-                            {{ $dueAmount <= 0 ? 'Total Paid' : 'Total Due' }}
+                            {{ $dueAmount <= 0 ? __('app.invoices.pdf.total_paid') : __('app.invoices.pdf.total_due') }}
                         </td>
                         <td class="right amount">
                             <span class="money">{{ \App\Helpers\Helpers::formatCurrency($dueAmount <= 0 ? $paidAmount : $dueAmount) }}</span>
@@ -467,7 +467,7 @@
         </div>
 
         <div class="footer">
-            Fueling your potential | {{ filled($gymDomain) ? $gymDomain : 'gymie' }}
+            {{ __('app.invoices.pdf.footer_tagline', ['domain' => filled($gymDomain) ? $gymDomain : 'gymie']) }}
         </div>
     </div>
 </body>

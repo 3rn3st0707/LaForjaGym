@@ -53,7 +53,7 @@ it('does not show an expiring badge on the active members card', function (): vo
     ]);
 
     Livewire::test(MembershipMetricsWidget::class)
-        ->assertSee('Active Members')
-        ->assertSee('previous period')
-        ->assertDontSee('Expiring');
+        ->assertSee(__('app.widgets.active_members'))
+        ->assertSee(__('app.widgets.vs_previous_period', ['count' => 0]))
+        ->assertDontSee(__('app.status.expiring'));
 });

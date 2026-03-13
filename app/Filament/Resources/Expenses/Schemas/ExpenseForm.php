@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Expenses\Schemas;
 
 use App\Enums\Status;
-use Filament\Schemas\Schema;
 use App\Helpers\Helpers;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -14,6 +13,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
 
 class ExpenseForm
@@ -24,18 +24,15 @@ class ExpenseForm
     public static function getStatusOptions(): array
     {
         return [
-            Status::Pending->value => 'Pending',
-            Status::Paid->value => 'Paid',
-            Status::Overdue->value => 'Overdue',
-            Status::Cancelled->value => 'Cancelled',
+            Status::Pending->value => Status::Pending->getLabel(),
+            Status::Paid->value => Status::Paid->getLabel(),
+            Status::Overdue->value => Status::Overdue->getLabel(),
+            Status::Cancelled->value => Status::Cancelled->getLabel(),
         ];
     }
 
     /**
      * Configure the expense form schema.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function configure(Schema $schema): Schema
     {
@@ -50,19 +47,19 @@ class ExpenseForm
                             ->columnSpanFull()
                             ->schema([
                                 TextInput::make('name')
-                                    ->label('Expense Name')
-                                    ->placeholder('E.g. Electricity bill')
+                                    ->label(__('app.fields.expense_name'))
+                                    ->placeholder(__('app.placeholders.expense_name_example'))
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpan(3),
                                 Select::make('category')
-                                    ->label('Category')
+                                    ->label(__('app.fields.category'))
                                     ->options(fn (): array => Helpers::getExpenseCategoryOptions())
                                     ->searchable()
                                     ->required()
                                     ->columnSpan(3),
                                 TextInput::make('amount')
-                                    ->label('Amount')
+                                    ->label(__('app.fields.amount'))
                                     ->prefix(Helpers::getCurrencySymbol())
                                     ->mask(RawJs::make('$money($input)'))
                                     ->stripCharacters([','])
@@ -71,20 +68,20 @@ class ExpenseForm
                                     ->required()
                                     ->columnSpan(2),
                                 DatePicker::make('date')
-                                    ->label('Date')
-                                    ->default(fn(): string => now()->timezone(config('app.timezone'))->toDateString())
+                                    ->label(__('app.fields.date'))
+                                    ->default(fn (): string => now()->timezone(config('app.timezone'))->toDateString())
                                     ->required()
                                     ->columnSpan(2),
                                 DatePicker::make('due_date')
-                                    ->label('Due Date')
+                                    ->label(__('app.fields.due_date'))
                                     ->columnSpan(2),
                                 Textarea::make('notes')
-                                    ->label('Notes')
-                                    ->placeholder('Optional notes…')
+                                    ->label(__('app.fields.note'))
+                                    ->placeholder(__('app.placeholders.optional_note'))
                                     ->rows(2)
                                     ->columnSpanFull(),
                                 Select::make('status')
-                                    ->label('Status')
+                                    ->label(__('app.fields.status'))
                                     ->options(static::getStatusOptions())
                                     ->default(Status::Pending->value)
                                     ->live()
@@ -102,15 +99,15 @@ class ExpenseForm
                                     ->required()
                                     ->columnSpan(2),
                                 DateTimePicker::make('paid_at')
-                                    ->label('Paid at')
+                                    ->label(__('app.fields.paid_at'))
                                     ->seconds(false)
                                     ->timezone(config('app.timezone'))
-                                    ->visible(fn(Get $get): bool => $get('status') === Status::Paid->value)
-                                    ->required(fn(Get $get): bool => $get('status') === Status::Paid->value)
+                                    ->visible(fn (Get $get): bool => $get('status') === Status::Paid->value)
+                                    ->required(fn (Get $get): bool => $get('status') === Status::Paid->value)
                                     ->columnSpan(2),
                                 TextInput::make('vendor')
-                                    ->label('Vendor')
-                                    ->placeholder('Vendor name')
+                                    ->label(__('app.fields.vendor'))
+                                    ->placeholder(__('app.placeholders.vendor_name'))
                                     ->maxLength(255)
                                     ->columnSpan(2),
                             ]),

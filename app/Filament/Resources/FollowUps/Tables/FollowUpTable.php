@@ -45,27 +45,27 @@ class FollowUpTable
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('enquiry.name')
                 ->searchable()
-                ->label('Enquiry')
+                ->label(__('app.resources.enquiries.singular'))
                 ->sortable(),
             TextColumn::make('user.name')
                 ->searchable()
-                ->label('Handled By')
-                ->placeholder('N/A')
+                ->label(__('app.fields.handled_by'))
+                ->placeholder(__('app.placeholders.na'))
                 ->sortable(),
             TextColumn::make('method')
-                ->label('Method')
+                ->label(__('app.fields.method'))
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('schedule_date')
                 ->searchable()
                 ->date('d-m-Y')
-                ->label('Schedule Date')
+                ->label(__('app.fields.schedule_date'))
                 ->toggleable(isToggledHiddenByDefault: false),
             TextColumn::make('status')
                 ->badge()
                 ->toggleable(isToggledHiddenByDefault: false),
             TextColumn::make('outcome')
                 ->toggleable(isToggledHiddenByDefault: true)
-                ->placeholder('N/A')
+                ->placeholder(__('app.placeholders.na'))
                 ->limit(40)
                 ->tooltip(function (TextColumn $column): ?string {
                     $state = $column->getState();
@@ -91,71 +91,72 @@ class FollowUpTable
             ->emptyStateHeading(function ($livewire): string {
                 // If no enquiry exist
                 if (! Enquiry::exists()) {
-                    return 'No Enquiries';
+                    return __('app.empty.no_records', ['records' => __('app.resources.enquiries.plural')]);
                 }
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab = $livewire->activeTab;
-                $heading = [
-                    'pending' => 'No Pending Follow Ups',
-                    'done' => 'No Done Follow Ups',
-                ][$tab] ?? 'No Follow Ups';
+                $records = __('app.resources.follow_ups.plural');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
                 if (! $from && ! $to) {
-                    return $heading;
+                    return $status
+                        ? __('app.empty.no_status_records', ['status' => $status, 'records' => $records])
+                        : __('app.empty.no_records', ['records' => $records]);
                 }
 
                 if ($tab === 'all') {
-                    return 'No Follow Ups in Date Range';
+                    return __('app.empty.no_records_in_range', ['records' => $records]);
                 }
 
                 return Enquiry::where('status', $tab)->exists()
-                    ? ($heading.' in Date Range')
-                    : $heading;
+                    ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
+                    : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
             ->emptyStateDescription(function ($livewire): ?string {
                 // If no enquiries exist
                 if (! Enquiry::exists()) {
-                    return 'Create a enquiry to get started.';
+                    return __('app.empty.create_to_get_started', ['resource' => __('app.resources.enquiries.singular')]);
                 }
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab = $livewire->activeTab;
-                $defaultDescriptions = [
-                    'pending' => 'There are no follow ups marked as pending.',
-                    'done' => 'There are no follow ups marked as done.',
-                ];
+                $records = __('app.resources.follow_ups.plural');
+                $record = __('app.resources.follow_ups.singular');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
 
                 if (! $fromRaw && ! $toRaw) {
-                    return $defaultDescriptions[$tab] ?? 'Create a follow up to get started.';
+                    return $status
+                        ? __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status])
+                        : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : 'the beginning';
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : 'today';
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
 
                 if ($tab === 'all') {
-                    return "We found no follow ups created between {$from} and {$to}.";
+                    return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
                 }
 
                 if (! FollowUp::where('status', $tab)->exists()) {
-                    return $defaultDescriptions[$tab] ?? 'Create a follow up to get started.';
+                    return __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status]);
                 }
 
-                return "We found no {$tab} follow up between {$from} and {$to}.";
+                return __('app.empty.found_none_status_between', ['status' => $status, 'records' => $records, 'from' => $from, 'to' => $to]);
             })
             ->emptyStateActions([
                 Action::make('create_enquiry')
-                    ->label('New enquiry')
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.enquiries.singular')]))
                     ->url(fn () => route('filament.admin.resources.enquiries.create'))
                     ->icon('heroicon-o-plus')
                     ->hidden(fn () => Enquiry::exists()),
                 CreateAction::make()
                     ->icon('heroicon-o-plus')
-                    ->label('New follow up')
+                    ->label(__('app.actions.new_follow_up'))
                     ->createAnother(false)
-                    ->modalHeading('New follow up')
+                    ->modalHeading(__('app.actions.new_follow_up'))
                     ->modalWidth('sm')
                     ->visible(fn () => Enquiry::exists() && ! FollowUp::exists()),
             ])
@@ -177,8 +178,8 @@ class FollowUpTable
             TrashedFilter::make(),
             Filter::make('date')
                 ->schema([
-                    DatePicker::make('date_from'),
-                    DatePicker::make('date_to'),
+                    DatePicker::make('date_from')->label(__('app.fields.date_from')),
+                    DatePicker::make('date_to')->label(__('app.fields.date_to')),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query
@@ -203,13 +204,13 @@ class FollowUpTable
             ActionGroup::make([
                 ActionGroup::make([
                     Action::make('heading_actions')
-                        ->label('Status')
+                        ->label(__('app.fields.status'))
                         ->visible(fn ($record) => in_array($record->status->value, ['pending']))
                         ->disabled()
                         ->color('gray'),
                     Action::make('mark_as_done')
                         ->color('success')
-                        ->label('Mark as Done')
+                        ->label(__('app.actions.mark_as_done'))
                         ->modalWidth('sm')
                         ->fillForm(fn (FollowUp $record): array => [
                             'user_id' => $record->user_id,
@@ -217,9 +218,9 @@ class FollowUpTable
                         ])
                         ->schema([
                             Select::make('user_id')
-                                ->label('Handled By')
+                                ->label(__('app.fields.handled_by'))
                                 ->relationship(name: 'user', titleAttribute: 'name')
-                                ->placeholder('Select Handler')
+                                ->placeholder(__('app.placeholders.select_handler'))
                                 ->getOptionLabelFromRecordUsing(function (User $record): string {
                                     $name = html_entity_decode($record->name, ENT_QUOTES, 'UTF-8');
                                     $url = ! empty($record->photo) ? e($record->photo) : "https://ui-avatars.com/api/?background=000&color=fff&name={$name}";
@@ -235,8 +236,8 @@ class FollowUpTable
                                 ->allowHtml()
                                 ->required(),
                             Textarea::make('outcome')
-                                ->placeholder('Not interested, etc.')
-                                ->label('Outcome')
+                                ->placeholder(__('app.placeholders.outcome_example'))
+                                ->label(__('app.fields.outcome'))
                                 ->required(),
                         ])
                         ->action(function (array $data, FollowUp $record): void {
@@ -246,7 +247,7 @@ class FollowUpTable
                                 'status' => 'done',
                             ]);
                             Notification::make()
-                                ->title('Marked as done')
+                                ->title(__('app.notifications.follow_up_marked_as_done'))
                                 ->success()
                                 ->send();
                         })
@@ -254,7 +255,7 @@ class FollowUpTable
                 ])->dropdown(false),
                 ActionGroup::make([
                     Action::make('heading_actions')
-                        ->label('Record Actions')
+                        ->label(__('app.actions.record_actions'))
                         ->disabled()
                         ->color('gray'),
                     ViewAction::make()

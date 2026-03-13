@@ -29,7 +29,17 @@ class Dashboard extends \Filament\Pages\Dashboard
 {
     use HasFilters;
 
-    protected static ?string $title = 'Dashboard';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('app.dashboard.title');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('app.navigation.dashboard');
+    }
 
     public static function getRoutePath(Panel $panel): string
     {
@@ -67,12 +77,12 @@ class Dashboard extends \Filament\Pages\Dashboard
                     ->native(false)
                     ->prefixIcon('heroicon-o-calendar-days')
                     ->options([
-                        '7days' => 'Last 7 days',
-                        '30days' => 'Last 30 days',
-                        'month' => 'Month to date',
-                        'quarter' => 'Quarter to date',
-                        'year' => 'Year to date',
-                        'custom' => 'Custom range',
+                        '7days' => __('app.dashboard.filters.periods.7days'),
+                        '30days' => __('app.dashboard.filters.periods.30days'),
+                        'month' => __('app.dashboard.filters.periods.month'),
+                        'quarter' => __('app.dashboard.filters.periods.quarter'),
+                        'year' => __('app.dashboard.filters.periods.year'),
+                        'custom' => __('app.dashboard.filters.periods.custom'),
                     ])
                     ->default('7days')
                     ->live()
@@ -85,7 +95,7 @@ class Dashboard extends \Filament\Pages\Dashboard
                     ]),
                 DatePicker::make('startDate')
                     ->hiddenLabel()
-                    ->placeholder('Start')
+                    ->placeholder(__('app.dashboard.filters.start'))
                     ->visible(fn (Get $get): bool => $get('period') === 'custom')
                     ->live()
                     ->grow(false)
@@ -94,7 +104,7 @@ class Dashboard extends \Filament\Pages\Dashboard
                     ]),
                 DatePicker::make('endDate')
                     ->hiddenLabel()
-                    ->placeholder('End')
+                    ->placeholder(__('app.dashboard.filters.end'))
                     ->visible(fn (Get $get): bool => $get('period') === 'custom')
                     ->live()
                     ->grow(false)
@@ -284,12 +294,12 @@ class Dashboard extends \Filament\Pages\Dashboard
         $period = (string) ($this->filters['period'] ?? '7days');
 
         return match ($period) {
-            '30days' => 'Last 30 days',
-            'month' => 'Month to date',
-            'quarter' => 'Quarter to date',
-            'ytd', 'year' => 'Year to date',
-            'custom' => 'Custom range',
-            default => 'Last 7 days',
+            '30days' => __('app.dashboard.filters.periods.30days'),
+            'month' => __('app.dashboard.filters.periods.month'),
+            'quarter' => __('app.dashboard.filters.periods.quarter'),
+            'ytd', 'year' => __('app.dashboard.filters.periods.year'),
+            'custom' => __('app.dashboard.filters.periods.custom'),
+            default => __('app.dashboard.filters.periods.7days'),
         };
     }
 }

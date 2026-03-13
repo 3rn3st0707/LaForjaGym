@@ -13,7 +13,10 @@ class ViewSubscription extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Subscription ' . $this->record->member->name;
+        return __('app.titles.record', [
+            'resource' => SubscriptionResource::getModelLabel(),
+            'name' => $this->record->member->name,
+        ]);
     }
 
     protected function getHeaderActions(): array
@@ -21,16 +24,16 @@ class ViewSubscription extends ViewRecord
         return [
             EditAction::make()
                 ->hidden(fn (): bool => in_array($this->record->status->value, ['expired', 'renewed'])),
-            DeleteAction::make()
+            DeleteAction::make(),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            SubscriptionResource::getUrl('index')   => 'Subscriptions',
-            $this->record->member->name
+            __('app.navigation.groups.memberships'),
+            SubscriptionResource::getUrl('index') => SubscriptionResource::getNavigationLabel(),
+            $this->record->member->name,
         ];
     }
 }

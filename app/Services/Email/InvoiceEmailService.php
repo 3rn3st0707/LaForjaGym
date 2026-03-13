@@ -74,34 +74,37 @@ final class InvoiceEmailService
         }
 
         $settings = $this->settingsRepository->get();
-        $gym = $this->gymIdentityFromSettings($settings);
-        $subjectTemplate = (string) data_get($settings,
-            'notifications.email.invoice_subject_template',
-            'Invoice {invoice_number} - {status}',
-        );
 
-        $pdfBytes = $this->renderer->render($invoice);
-        $subject = $this->renderSubjectTemplate(
-            $subjectTemplate,
-            $this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
-        );
+        $this->withLocaleFromSettings($settings, function () use ($settings, $invoice, $toEmail, $note, $memberName): void {
+            $gym = $this->gymIdentityFromSettings($settings);
+            $subjectTemplate = (string) data_get($settings,
+                'notifications.email.invoice_subject_template',
+                'Invoice {invoice_number} - {status}',
+            );
 
-        $mailable = new InvoiceIssuedMail(
-            invoice: $invoice,
-            subjectLine: $subject,
-            gymName: $gym['name'],
-            gymEmail: $gym['email'],
-            gymContact: $gym['contact'],
-            memberName: $memberName,
-            staffNote: $note,
-            pdfBytes: $pdfBytes,
-        );
+            $pdfBytes = $this->renderer->render($invoice);
+            $subject = $this->renderSubjectTemplate(
+                $subjectTemplate,
+                $this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+            );
 
-        if (filled($gym['email'])) {
-            $mailable->replyTo($gym['email'], $gym['name']);
-        }
+            $mailable = new InvoiceIssuedMail(
+                invoice: $invoice,
+                subjectLine: $subject,
+                gymName: $gym['name'],
+                gymEmail: $gym['email'],
+                gymContact: $gym['contact'],
+                memberName: $memberName,
+                note: $note,
+                pdfBytes: $pdfBytes,
+            );
 
-        Mail::to($toEmail)->send($mailable);
+            if (filled($gym['email'])) {
+                $mailable->replyTo($gym['email'], $gym['name']);
+            }
+
+            Mail::to($toEmail)->send($mailable);
+        });
     }
 
     /**
@@ -125,38 +128,67 @@ final class InvoiceEmailService
         }
 
         $settings = $this->settingsRepository->get();
-        $gym = $this->gymIdentityFromSettings($settings);
-        $subjectTemplate = (string) data_get($settings,
-            'notifications.email.receipt_subject_template',
-            'Payment received - {invoice_number}',
-        );
 
-        $pdfBytes = $this->renderer->render($invoice);
-        $subject = $this->renderSubjectTemplate(
-            $subjectTemplate,
-            [
-                ...$this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
-                'payment_amount' => Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
-            ],
-        );
+        $this->withLocaleFromSettings($settings, function () use ($settings, $invoice, $transaction, $toEmail, $note, $memberName): void {
+            $gym = $this->gymIdentityFromSettings($settings);
+            $subjectTemplate = (string) data_get($settings,
+                'notifications.email.receipt_subject_template',
+                'Payment received - {invoice_number}',
+            );
 
-        $mailable = new InvoicePaymentReceiptMail(
-            invoice: $invoice,
-            transaction: $transaction,
-            subjectLine: $subject,
-            gymName: $gym['name'],
-            gymEmail: $gym['email'],
-            gymContact: $gym['contact'],
-            memberName: $memberName,
-            staffNote: $note,
-            pdfBytes: $pdfBytes,
-        );
+            $pdfBytes = $this->renderer->render($invoice);
+            $subject = $this->renderSubjectTemplate(
+                $subjectTemplate,
+                [
+                    ...$this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+                    'payment_amount' => Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
+                ],
+            );
 
-        if (filled($gym['email'])) {
-            $mailable->replyTo($gym['email'], $gym['name']);
+            $mailable = new InvoicePaymentReceiptMail(
+                invoice: $invoice,
+                transaction: $transaction,
+                subjectLine: $subject,
+                gymName: $gym['name'],
+                gymEmail: $gym['email'],
+                gymContact: $gym['contact'],
+                memberName: $memberName,
+                note: $note,
+                pdfBytes: $pdfBytes,
+            );
+
+            if (filled($gym['email'])) {
+                $mailable->replyTo($gym['email'], $gym['name']);
+            }
+
+            Mail::to($toEmail)->send($mailable);
+        });
+    }
+
+    /**
+     * Temporarily set the app locale from settings for rendering PDFs and email views.
+     *
+     * @template T
+     *
+     * @param  array<string, mixed>  $settings
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function withLocaleFromSettings(array $settings, callable $callback): mixed
+    {
+        $originalLocale = app()->getLocale();
+        $desiredLocale = (string) data_get($settings, 'general.locale', $originalLocale);
+        $supportedLocales = (array) config('app.supported_locales', []);
+
+        if ($desiredLocale !== '' && in_array($desiredLocale, $supportedLocales, true)) {
+            app()->setLocale($desiredLocale);
         }
 
-        Mail::to($toEmail)->send($mailable);
+        try {
+            return $callback();
+        } finally {
+            app()->setLocale($originalLocale);
+        }
     }
 
     /**
@@ -230,7 +262,7 @@ final class InvoiceEmailService
         $rendered = trim($rendered);
 
         if ($rendered === '') {
-            return 'Invoice';
+            return __('app.resources.invoices.singular');
         }
 
         return (string) Str::of($rendered)->limit(150, '…');

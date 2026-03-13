@@ -2,24 +2,36 @@
 
 namespace App\Filament\Resources\Plans;
 
-use App\Models\Plan;
-use Filament\Schemas\Schema;
 use App\Filament\Resources\Plans\Pages\ListPlans;
 use App\Filament\Resources\Plans\Schemas\PlanForm;
 use App\Filament\Resources\Plans\Schemas\PlanInfolist;
 use App\Filament\Resources\Plans\Tables\PlanTable;
+use App\Models\Plan;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
 class PlanResource extends Resource
 {
     protected static ?string $model = Plan::class;
 
+    public static function getModelLabel(): string
+    {
+        return __('app.resources.plans.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.resources.plans.plural');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return static::getPluralModelLabel();
+    }
+
     /**
      * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function form(Schema $schema): Schema
     {
@@ -33,7 +45,7 @@ class PlanResource extends Resource
      */
     public static function table(Table $table): Table
     {
-        return  PlanTable::configure($table);
+        return PlanTable::configure($table);
     }
 
     /**

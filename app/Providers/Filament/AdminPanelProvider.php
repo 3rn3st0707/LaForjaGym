@@ -13,6 +13,7 @@ use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\Services\ServiceResource;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Http\Middleware\SetAppLocale;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Http\Middleware\Authenticate;
@@ -25,11 +26,14 @@ use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
@@ -75,6 +79,7 @@ class AdminPanelProvider extends PanelProvider
                 ->navigationIcon(fn (): null => null)
                 ->activeNavigationIcon(fn (): null => null)])
             ->middleware([
+                SetAppLocale::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
@@ -90,7 +95,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->databaseNotifications()
-            ->globalSearchKeyBindings(['command+k', 'ctrl+k']);
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn (): HtmlString => new HtmlString(
+                    Blade::render('@livewire(\\App\\Filament\\Livewire\\LocaleSwitcher::class, [], key(\'locale-switcher\'))')
+                ),
+            );
     }
 
     /**
@@ -123,28 +134,28 @@ class AdminPanelProvider extends PanelProvider
 
         return $builder
             ->groups([
-                NavigationGroup::make('Sales')
+                NavigationGroup::make(__('app.navigation.groups.sales'))
                     ->icon('heroicon-o-shopping-cart')
                     ->items($sales)
                     ->collapsed(false),
 
-                NavigationGroup::make('Memberships')
+                NavigationGroup::make(__('app.navigation.groups.memberships'))
                     ->icon('heroicon-o-user-group')
                     ->items($memberships)
                     ->collapsed(false),
 
-                NavigationGroup::make('Billing')
+                NavigationGroup::make(__('app.navigation.groups.billing'))
                     ->icon('heroicon-o-document-text')
                     ->items($billing)
                     ->collapsed(false),
 
-                NavigationGroup::make('Administration')
+                NavigationGroup::make(__('app.navigation.groups.administration'))
                     ->icon('heroicon-o-wrench-screwdriver')
                     ->items($administration)
                     ->collapsed(false),
             ])
             ->item(
-                NavigationItem::make('Dashboard')
+                NavigationItem::make(__('app.navigation.dashboard'))
                     ->icon('heroicon-o-chart-bar')
                     ->url(fn () => Dashboard::getUrl())
                     ->isActiveWhen(fn () => request()->routeIs('filament.admin.pages.dashboard'))

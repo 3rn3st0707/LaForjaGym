@@ -33,8 +33,8 @@ it('does not render sparklines on net revenue and total collected cards', functi
     ]);
 
     Livewire::test(FinancialMetricsWidget::class)
-        ->assertSee('Net Revenue')
-        ->assertSee('Total Collected')
+        ->assertSee(__('app.widgets.net_revenue'))
+        ->assertSee(__('app.widgets.total_collected'))
         ->assertDontSee('fi-wi-stats-overview-stat-chart', false)
         ->assertDontSeeHtml('<canvas');
 });

@@ -3,7 +3,7 @@
         {{ $this->form }}
         <div class="flex justify-end items-center space-x-4">
             <x-filament::button type="submit" wire:loading.class="opacity-50">
-                Save Settings
+                {{ __('app.settings.actions.save_settings') }}
             </x-filament::button>
         </div>
     </form>

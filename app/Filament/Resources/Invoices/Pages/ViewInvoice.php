@@ -12,23 +12,23 @@ class ViewInvoice extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Invoice No. #' . $this->record->number;
+        return __('app.titles.invoice_number', ['number' => $this->record->number]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             EditAction::make()
-                ->hidden(fn(): bool => $this->record->status?->value !== 'issued'),
+                ->hidden(fn (): bool => $this->record->status?->value !== 'issued'),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Billing',
-            InvoiceResource::getUrl('index')   => 'Invoices',
-            $this->record->number
+            __('app.navigation.groups.billing'),
+            InvoiceResource::getUrl('index') => InvoiceResource::getNavigationLabel(),
+            $this->record->number,
         ];
     }
 }

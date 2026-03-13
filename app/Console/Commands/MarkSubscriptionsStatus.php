@@ -107,6 +107,7 @@ class MarkSubscriptionsStatus extends Command
 
         if (empty($summary)) {
             $this->info('No subscription statuses needed updating.');
+
             return;
         }
 
@@ -117,8 +118,8 @@ class MarkSubscriptionsStatus extends Command
         $admin = User::role('super_admin')->first();
         if ($admin) {
             Notification::make()
-                ->title('Subscription Status Update')
-                ->body('Subscriptions updated: ' . implode(', ', $summary) . '.')
+                ->title(__('app.notifications.subscription_status_update_title'))
+                ->body(__('app.notifications.subscription_status_update_body', ['summary' => implode(', ', $summary)]))
                 ->info()
                 ->sendToDatabase($admin);
         }

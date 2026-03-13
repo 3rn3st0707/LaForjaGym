@@ -2,13 +2,12 @@
 
 namespace App\Filament\Resources\Enquiries\Pages;
 
-use Filament\Actions\CreateAction;
-use Filament\Schemas\Components\Tabs\Tab;
 use App\Enums\Status;
 use App\Filament\Resources\Enquiries\EnquiryResource;
 use App\Models\Enquiry;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListEnquiries extends ListRecords
@@ -20,34 +19,35 @@ class ListEnquiries extends ListRecords
         return [
             CreateAction::make()
                 ->icon('heroicon-m-plus')
-                ->hidden(!Enquiry::exists()),
+                ->label(__('app.actions.new', ['resource' => EnquiryResource::getModelLabel()]))
+                ->hidden(! Enquiry::exists()),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Sales',
-            'Enquiries',
+            __('app.navigation.groups.sales'),
+            EnquiryResource::getNavigationLabel(),
         ];
     }
 
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('All'),
-            'lead' => Tab::make('Lead')
+            'all' => Tab::make(__('app.common.all')),
+            'lead' => Tab::make(__('app.status.lead'))
                 ->badge(Enquiry::query()->where('status', 'lead')->count())
                 ->badgeColor(Status::Lead->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'lead')),
-            'member' => Tab::make('Member')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'lead')),
+            'member' => Tab::make(__('app.status.member'))
                 ->badge(Enquiry::query()->where('status', 'member')->count())
                 ->badgeColor(Status::Member->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'member')),
-            'lost' => Tab::make('Lost')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'member')),
+            'lost' => Tab::make(__('app.status.lost'))
                 ->badge(Enquiry::query()->where('status', 'lost')->count())
                 ->badgeColor(Status::Lost->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'lost')),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'lost')),
         ];
     }
 }

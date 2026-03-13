@@ -31,7 +31,7 @@
                     <div class="h-8 w-full overflow-hidden rounded-md bg-gray-100 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
                         @if ($segments->isEmpty())
                         <div class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-                            No expenses in this period
+                            {{ __('app.widgets.no_expenses_in_period') }}
                         </div>
                         @else
                         <div class="flex h-full w-full gap-[1px]">

@@ -39,70 +39,72 @@ class InvoiceInfolist
                                     ]
                                 );
 
-                                return new HtmlString('Details '.$html);
+                                return new HtmlString(e(__('app.ui.details')).' '.$html);
                             })
                             ->schema([
-                                TextEntry::make('number')->label('Invoice No.'),
+                                TextEntry::make('number')->label(__('app.fields.invoice_number')),
                                 TextEntry::make('subscription.member')
-                                    ->label('Subscription')
+                                    ->label(__('app.fields.subscription'))
                                     ->weight(FontWeight::Bold)
                                     ->color('success')
                                     ->formatStateUsing(fn ($record): string => "{$record->subscription->member->code} – {$record->subscription->member->name}")
                                     ->url(fn ($record): string => route('filament.admin.resources.subscriptions.view', $record->subscription_id)),
-                                TextEntry::make('date')->date(),
+                                TextEntry::make('date')->label(__('app.fields.date'))->date(),
                                 TextEntry::make('due_date')
-                                    ->label('Due Date')
+                                    ->label(__('app.fields.due_date'))
                                     ->date(),
                                 TextEntry::make('payment_method')
-                                    ->label('Payment Method')
-                                    ->formatStateUsing(fn (?string $state): string => $state ? PaymentMethod::channelLabel($state) : '—'),
+                                    ->label(__('app.fields.payment_method'))
+                                    ->formatStateUsing(fn (?string $state): string => $state ? PaymentMethod::channelLabel($state) : __('app.placeholders.dash')),
                                 TextEntry::make('discount_note')
-                                    ->label('Discount Note')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.discount_note'))
+                                    ->placeholder(__('app.placeholders.na')),
                             ])
                             ->columns(3)
                             ->columnSpan(3),
 
-                        Section::make('Summary')
+                        Section::make(__('app.titles.summary'))
                             ->schema([
                                 Flex::make([
                                     TextEntry::make('fee_label')
-                                        ->label('Fee:'),
+                                        ->label(__('app.fields.fee').':'),
                                     TextEntry::make('subscription_fee')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->subscription_fee)),
                                 ]),
                                 Flex::make([
                                     TextEntry::make('tax_label')
-                                        ->label('Tax ('.Helpers::getTaxRate().'%): '),
+                                        ->label(__('app.fields.tax_with_rate', ['rate' => Helpers::getTaxRate()]).':'),
                                     TextEntry::make('tax')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->tax)),
                                 ])->hidden(fn ($record) => empty($record->tax)),
                                 Flex::make([
                                     TextEntry::make('discount_label')
-                                        ->label(fn (Invoice $record) => $record->discount ? 'Discount ('.$record->discount.')%:' : 'Discount'),
+                                        ->label(fn (Invoice $record) => $record->discount
+                                            ? __('app.fields.discount_with_rate', ['rate' => $record->discount]).':'
+                                            : __('app.fields.discount').':'),
                                     TextEntry::make('discount_amount')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->discount_amount)),
                                 ])->hidden(fn ($record) => empty($record->discount_amount)),
                                 Flex::make([
                                     TextEntry::make('total_label')
-                                        ->label('Total:'),
+                                        ->label(__('app.fields.total').':'),
                                     TextEntry::make('total_amount')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->total_amount)),
                                 ]),
                                 Flex::make([
                                     TextEntry::make('paid_label')
-                                        ->label('Paid:'),
+                                        ->label(__('app.fields.paid').':'),
                                     TextEntry::make('paid_amount')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->paid_amount)),
                                 ])->hidden(fn ($record) => empty($record->paid_amount)),
                                 Flex::make([
                                     TextEntry::make('due_label')
-                                        ->label('Due:'),
+                                        ->label(__('app.fields.due').':'),
                                     TextEntry::make('due_amount')
                                         ->hiddenLabel()
                                         ->formatStateUsing(fn (Invoice $record) => Helpers::formatCurrency($record->due_amount)),

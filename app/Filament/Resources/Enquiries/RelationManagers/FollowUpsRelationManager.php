@@ -10,12 +10,18 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class FollowUpsRelationManager extends RelationManager
 {
     protected static string $relationship = 'followUps';
 
-    protected static ?string $title = 'Follow Up Timeline';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('app.titles.follow_up_timeline');
+    }
 
     /**
      * Determine if the relation manager is read-only.
@@ -47,18 +53,18 @@ class FollowUpsRelationManager extends RelationManager
                     ->icon('heroicon-m-plus')
                     ->visible(fn () => $this->getOwnerRecord()->followUps()->exists())
                     ->createAnother(false)
-                    ->modalHeading('New follow up')
+                    ->modalHeading(__('app.actions.new_follow_up'))
                     ->modalWidth('sm'),
             ])
             ->emptyStateIcon('heroicon-o-arrow-path-rounded-square')
-            ->emptyStateHeading('No Follow Ups')
-            ->emptyStateDescription('Create follow-ups to get started.')
+            ->emptyStateHeading(__('app.empty.no_records', ['records' => __('app.resources.follow_ups.plural')]))
+            ->emptyStateDescription(__('app.empty.create_to_get_started', ['resource' => __('app.resources.follow_ups.singular')]))
             ->emptyStateActions([
                 CreateAction::make('create-follow-up')
                     ->icon('heroicon-o-plus')
-                    ->label('New follow up')
+                    ->label(__('app.actions.new_follow_up'))
                     ->createAnother(false)
-                    ->modalHeading('New follow up')
+                    ->modalHeading(__('app.actions.new_follow_up'))
                     ->modalWidth('sm'),
             ])
             ->filters(FollowUpTable::getTableFilters())

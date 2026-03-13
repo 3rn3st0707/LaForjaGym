@@ -11,14 +11,14 @@ class CreateEnquiry extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'New Enquiry';
+        return __('app.actions.new', ['resource' => EnquiryResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Sales',
-            EnquiryResource::getUrl('index')   => 'Enquiries',
+            __('app.navigation.groups.sales'),
+            EnquiryResource::getUrl('index') => EnquiryResource::getNavigationLabel(),
         ];
     }
 }

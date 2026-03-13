@@ -11,16 +11,15 @@ class ViewExpense extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Expense';
+        return ExpenseResource::getModelLabel();
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Billing',
-            ExpenseResource::getUrl('index') => 'Expenses',
-            'View',
+            __('app.navigation.groups.billing'),
+            ExpenseResource::getUrl('index') => ExpenseResource::getNavigationLabel(),
+            __('app.actions.view', ['resource' => ExpenseResource::getModelLabel()]),
         ];
     }
 }
-

@@ -2,13 +2,12 @@
 
 namespace App\Filament\Resources\Plans\Pages;
 
-use Filament\Actions\CreateAction;
-use Filament\Schemas\Components\Tabs\Tab;
 use App\Enums\Status;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Models\Plan;
-use Filament\Actions;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListPlans extends ListRecords
@@ -22,7 +21,8 @@ class ListPlans extends ListRecords
                 ->icon('heroicon-m-plus')
                 ->modalAlignment('center')
                 ->modalWidth('xl')
-                ->modalHeading('New plan')
+                ->label(__('app.actions.new', ['resource' => PlanResource::getModelLabel()]))
+                ->modalHeading(__('app.actions.new', ['resource' => PlanResource::getModelLabel()]))
                 ->createAnother(false)
                 ->visible(Plan::exists()),
         ];
@@ -31,23 +31,23 @@ class ListPlans extends ListRecords
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            'Plans',
+            __('app.navigation.groups.memberships'),
+            PlanResource::getNavigationLabel(),
         ];
     }
 
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('All'),
-            'active' => Tab::make('Active')
+            'all' => Tab::make(__('app.common.all')),
+            'active' => Tab::make(__('app.status.active'))
                 ->badge(Plan::query()->where('status', 'active')->count())
                 ->badgeColor(Status::Active->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'active')),
-            'inactive' => Tab::make('Inactive')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'active')),
+            'inactive' => Tab::make(__('app.status.inactive'))
                 ->badge(Plan::query()->where('status', 'inactive')->count())
                 ->badgeColor(Status::Inactive->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'inactive')),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'inactive')),
         ];
     }
 }

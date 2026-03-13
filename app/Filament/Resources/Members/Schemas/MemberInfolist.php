@@ -33,50 +33,53 @@ class MemberInfolist
                                 'label' => $status->getLabel(),
                             ]
                         );
-                        return new HtmlString('Details ' . $html);
+
+                        return new HtmlString(e(__('app.ui.details')).' '.$html);
                     })
                     ->schema([
                         ImageEntry::make('photo')
                             ->hiddenLabel()
-                            ->defaultImageUrl(fn(Member $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name=' . $record->name)
+                            ->defaultImageUrl(fn (Member $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
                             ->size(180)
                             ->circular()
                             ->columnSpan(1),
                         Group::make()
                             ->schema([
                                 TextEntry::make('code')
-                                    ->label('Member Code'),
-                                TextEntry::make('name'),
-                                TextEntry::make('gender')->label('Gender'),
-                                TextEntry::make('email'),
-                                TextEntry::make('contact'),
-                                TextEntry::make('emergency_contact')->placeholder('N/A'),
+                                    ->label(__('app.fields.member_code')),
+                                TextEntry::make('name')->label(__('app.fields.name')),
+                                TextEntry::make('gender')->label(__('app.fields.gender')),
+                                TextEntry::make('email')->label(__('app.fields.email')),
+                                TextEntry::make('contact')->label(__('app.fields.contact')),
+                                TextEntry::make('emergency_contact')->label(__('app.fields.emergency_contact'))->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('dob')
-                                    ->label('Date of Birth')
+                                    ->label(__('app.fields.dob'))
                                     ->date('d-m-Y'),
                                 TextEntry::make('source')
-                                    ->label('Source')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.source'))
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('goal')
-                                    ->label('Goal ?')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.goal'))
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('health_issue')
-                                    ->label('Health Issue')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.health_issues'))
+                                    ->placeholder(__('app.placeholders.na')),
                             ])->columnSpan(4)->columns(3),
                     ])->columns(5),
-                Section::make('Location')
+                Section::make(__('app.ui.location'))
                     ->columns(3)
                     ->schema([
-                        TextEntry::make('address')->label('Address'),
+                        TextEntry::make('address')->label(__('app.fields.address')),
                         Group::make()
                             ->schema([
-                                TextEntry::make('country')->label('Country'),
+                                TextEntry::make('country')->label(__('app.fields.country')),
                                 TextEntry::make('state')
-                                    ->placeholder('N/A'),
+                                    ->label(__('app.fields.state'))
+                                    ->placeholder(__('app.placeholders.na')),
                                 TextEntry::make('city')
-                                    ->placeholder('N/A'),
-                                TextEntry::make('pincode')->label('PIN Code'),
+                                    ->label(__('app.fields.city'))
+                                    ->placeholder(__('app.placeholders.na')),
+                                TextEntry::make('pincode')->label(__('app.fields.pincode')),
                             ])
                             ->columnSpan(2)
                             ->columns(4),

@@ -54,7 +54,7 @@ class SubscriptionForm
                         Select::make('member_id')
                             ->columnSpan(2)
                             ->relationship('member', 'name')
-                            ->placeholder('Select a member')
+                            ->placeholder(__('app.placeholders.select_member'))
                             ->getOptionLabelFromRecordUsing(fn (Member $record): string => "{$record->code} - {$record->name}")
                             ->hiddenOn([SubscriptionsRelationManager::class, CreateMember::class])
                             ->required(),
@@ -64,7 +64,7 @@ class SubscriptionForm
                                 ? 4
                                 : 2)
                             ->relationship('plan', 'name')
-                            ->placeholder('Select a plan')
+                            ->placeholder(__('app.placeholders.select_plan'))
                             ->searchable(['code', 'name'])
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(fn (Plan $record): string => self::formatPlanOptionLabel($record))
@@ -102,7 +102,7 @@ class SubscriptionForm
                             })
                             ->required(),
                         DatePicker::make('start_date')
-                            ->label('Start Date')
+                            ->label(__('app.fields.start_date'))
                             ->live()
                             ->required()
                             ->default(now())
@@ -115,7 +115,7 @@ class SubscriptionForm
                                 ));
                             }),
                         DatePicker::make('end_date')
-                            ->label('End Date')
+                            ->label(__('app.fields.end_date'))
                             ->live()
                             ->required()
                             ->after('start_date')
@@ -129,7 +129,7 @@ class SubscriptionForm
                                 ));
                             }),
                     ]),
-                Section::make('Invoice Details')
+                Section::make(__('app.titles.invoice_details'))
                     ->hiddenOn('edit')
                     ->columnSpanFull()
                     ->schema(
@@ -152,7 +152,7 @@ class SubscriptionForm
                                         ->columnSpan(3)
                                         ->schema([
                                             TextInput::make('number')
-                                                ->label('Invoice No.')
+                                                ->label(__('app.fields.invoice_number'))
                                                 ->required()
                                                 ->readOnly()
                                                 ->disabled()
@@ -164,20 +164,20 @@ class SubscriptionForm
                                                     $get('date')
                                                 )),
                                             DatePicker::make('date')
-                                                ->label('Date')
+                                                ->label(__('app.fields.date'))
                                                 ->required()
                                                 ->reactive()
                                                 ->default(now()),
                                             DatePicker::make('due_date')
-                                                ->label('Due Date')
+                                                ->label(__('app.fields.due_date'))
                                                 ->required()
                                                 ->reactive(),
                                             Select::make('discount')
-                                                ->label('Discount')
+                                                ->label(__('app.fields.discount'))
                                                 ->options(Helpers::getDiscounts())
                                                 ->live()
                                                 ->reactive()
-                                                ->placeholder('Select Discount')
+                                                ->placeholder(__('app.placeholders.select_discount'))
                                                 ->afterStateUpdated(
                                                     function (Get $get, Set $set) {
                                                         $fee = $get('subscription_fee') ?: 0;
@@ -189,7 +189,7 @@ class SubscriptionForm
                                                     }
                                                 ),
                                             TextInput::make('discount_amount')
-                                                ->label('Discount Amount')
+                                                ->label(__('app.fields.discount_amount'))
                                                 ->numeric()
                                                 ->debounce(300)
                                                 ->default(0)
@@ -208,10 +208,10 @@ class SubscriptionForm
                                                     }
                                                 ),
                                             Textarea::make('discount_note')
-                                                ->label('Discount Note')
-                                                ->placeholder('E.g. introductory offer'),
+                                                ->label(__('app.fields.discount_note'))
+                                                ->placeholder(__('app.placeholders.discount_note_example')),
                                             TextInput::make('paid_amount')
-                                                ->label('Paid Amount')
+                                                ->label(__('app.fields.paid_amount'))
                                                 ->numeric()
                                                 ->minValue(0)
                                                 ->debounce(300)
@@ -223,7 +223,7 @@ class SubscriptionForm
                                                     self::recalculateInvoiceSummary($get, $set);
                                                 }),
                                             Radio::make('payment_method')
-                                                ->label('Payment Method')
+                                                ->label(__('app.fields.payment_method'))
                                                 ->options(self::paymentMethodOptions())
                                                 ->default('cash')
                                                 ->inline()
@@ -238,12 +238,12 @@ class SubscriptionForm
                                                 })
                                                 ->required(),
                                         ]),
-                                    Fieldset::make('Summary')
+                                    Fieldset::make(__('app.titles.summary'))
                                         ->columns(1)
                                         ->columnSpan(1)
                                         ->schema([
                                             TextInput::make('subscription_fee')
-                                                ->label('Subscription Fee')
+                                                ->label(__('app.fields.subscription_fee'))
                                                 ->numeric()
                                                 ->readOnly()
                                                 ->disabled()
@@ -252,7 +252,7 @@ class SubscriptionForm
                                                 ->prefix(Helpers::getCurrencySymbol())
                                                 ->required(),
                                             TextInput::make('tax')
-                                                ->label('Tax ('.Helpers::getTaxRate().'%)')
+                                                ->label(fn (): string => __('app.fields.tax_with_rate', ['rate' => Helpers::getTaxRate()]))
                                                 ->numeric()
                                                 ->disabled()
                                                 ->dehydrated()
@@ -260,7 +260,7 @@ class SubscriptionForm
                                                 ->prefix(Helpers::getCurrencySymbol())
                                                 ->readOnly(),
                                             TextInput::make('total_amount')
-                                                ->label('Total Amount')
+                                                ->label(__('app.fields.total_amount'))
                                                 ->numeric()
                                                 ->readOnly()
                                                 ->disabled()
@@ -269,7 +269,7 @@ class SubscriptionForm
                                                 ->prefix(Helpers::getCurrencySymbol())
                                                 ->required(),
                                             TextInput::make('due_amount')
-                                                ->label('Due Amount')
+                                                ->label(__('app.fields.due_amount'))
                                                 ->numeric()
                                                 ->readOnly()
                                                 ->disabled()
@@ -296,7 +296,7 @@ class SubscriptionForm
                 ->columns(5)
                 ->schema([
                     Select::make('plan_id')
-                        ->label('Plan')
+                        ->label(__('app.fields.plan'))
                         ->options(fn (): array => Plan::query()
                             ->orderBy('name')
                             ->get()
@@ -324,7 +324,7 @@ class SubscriptionForm
                         ->required()
                         ->columnSpan(3),
                     DatePicker::make('start_date')
-                        ->label('Start Date')
+                        ->label(__('app.fields.start_date'))
                         ->native(false)
                         ->suffixIcon('heroicon-m-calendar-days')
                         ->default($defaultStartDate)
@@ -339,7 +339,7 @@ class SubscriptionForm
                         })
                         ->required(),
                     DatePicker::make('end_date')
-                        ->label('End Date')
+                        ->label(__('app.fields.end_date'))
                         ->native(false)
                         ->suffixIcon('heroicon-m-calendar-days')
                         ->disabled()
@@ -350,14 +350,14 @@ class SubscriptionForm
                         ))
                         ->required(),
                 ]),
-            Section::make('Invoice')
+            Section::make(__('app.resources.invoices.singular'))
                 ->columns(7)
                 ->schema([
                     Group::make()
                         ->columns(2)
                         ->schema([
                             TextInput::make('invoice_number')
-                                ->label('Invoice No.')
+                                ->label(__('app.fields.invoice_number'))
                                 ->required()
                                 ->readOnly()
                                 ->disabled()
@@ -369,7 +369,7 @@ class SubscriptionForm
                                     $get('invoice_date'),
                                 )),
                             DatePicker::make('invoice_date')
-                                ->label('Invoice Date')
+                                ->label(__('app.fields.invoice_date'))
                                 ->native(false)
                                 ->suffixIcon('heroicon-m-calendar-days')
                                 ->default($today)
@@ -387,17 +387,17 @@ class SubscriptionForm
                                 })
                                 ->required(),
                             DatePicker::make('invoice_due_date')
-                                ->label('Due Date')
+                                ->label(__('app.fields.due_date'))
                                 ->native(false)
                                 ->suffixIcon('heroicon-m-calendar-days')
                                 ->default($today)
                                 ->required(),
                             Select::make('discount')
-                                ->label('Discount')
+                                ->label(__('app.fields.discount'))
                                 ->options(Helpers::getDiscounts())
                                 ->live()
                                 ->reactive()
-                                ->placeholder('Select Discount')
+                                ->placeholder(__('app.placeholders.select_discount'))
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
                                     $plan = $get('plan_id') ? Plan::find($get('plan_id')) : null;
                                     $fee = round($plan?->amount ?? 0);
@@ -408,7 +408,7 @@ class SubscriptionForm
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
                             TextInput::make('discount_amount')
-                                ->label('Discount Amount')
+                                ->label(__('app.fields.discount_amount'))
                                 ->numeric()
                                 ->minValue(0)
                                 ->maxValue(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
@@ -419,10 +419,10 @@ class SubscriptionForm
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
                             Textarea::make('discount_note')
-                                ->label('Discount Note')
-                                ->placeholder('E.g. renewal offer'),
+                                ->label(__('app.fields.discount_note'))
+                                ->placeholder(__('app.placeholders.discount_note_renewal_example')),
                             TextInput::make('paid_amount')
-                                ->label('Paid Amount')
+                                ->label(__('app.fields.paid_amount'))
                                 ->numeric()
                                 ->minValue(0)
                                 ->debounce(300)
@@ -433,7 +433,7 @@ class SubscriptionForm
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
                             Radio::make('payment_method')
-                                ->label('Payment Method')
+                                ->label(__('app.fields.payment_method'))
                                 ->options(self::paymentMethodOptions())
                                 ->default('cash')
                                 ->inline()
@@ -448,12 +448,12 @@ class SubscriptionForm
                                 })
                                 ->required(),
                         ])->columnSpan(5),
-                    Fieldset::make('Summary')
+                    Fieldset::make(__('app.titles.summary'))
                         ->columns(1)
                         ->columnSpan(2)
                         ->schema([
                             TextInput::make('subscription_fee')
-                                ->label('Subscription Fee')
+                                ->label(__('app.fields.subscription_fee'))
                                 ->numeric()
                                 ->readOnly()
                                 ->disabled()
@@ -461,7 +461,7 @@ class SubscriptionForm
                                 ->default(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
                                 ->prefix(Helpers::getCurrencySymbol()),
                             TextInput::make('tax')
-                                ->label('Tax ('.Helpers::getTaxRate().'%)')
+                                ->label(fn (): string => __('app.fields.tax_with_rate', ['rate' => Helpers::getTaxRate()]))
                                 ->numeric()
                                 ->readOnly()
                                 ->disabled()
@@ -469,7 +469,7 @@ class SubscriptionForm
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol()),
                             TextInput::make('total_amount')
-                                ->label('Total Amount')
+                                ->label(__('app.fields.total_amount'))
                                 ->numeric()
                                 ->readOnly()
                                 ->disabled()
@@ -477,7 +477,7 @@ class SubscriptionForm
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol()),
                             TextInput::make('due_amount')
-                                ->label('Due Amount')
+                                ->label(__('app.fields.due_amount'))
                                 ->numeric()
                                 ->readOnly()
                                 ->disabled()
@@ -556,8 +556,8 @@ class SubscriptionForm
             ]);
 
             Notification::make()
-                ->title('Subscription renewed')
-                ->body("New subscription created and invoice {$invoice->number} generated.")
+                ->title(__('app.notifications.subscription_renewed_title'))
+                ->body(__('app.notifications.subscription_renewed_body', ['invoice_number' => (string) $invoice->number]))
                 ->success()
                 ->send();
         });
@@ -612,12 +612,12 @@ class SubscriptionForm
     private static function formatPlanOptionLabel(Plan $plan): string
     {
         return sprintf(
-            '%s – %s (%s%s | %d days)',
+            '%s – %s (%s%s | %s)',
             $plan->code,
             $plan->name,
             Helpers::getCurrencySymbol(),
             round($plan->amount),
-            $plan->days,
+            __('app.units.days', ['count' => $plan->days]),
         );
     }
 }

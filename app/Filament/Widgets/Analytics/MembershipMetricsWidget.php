@@ -141,36 +141,36 @@ HTML);
 
         return [
             Stat::make(
-                'Active Members',
+                __('app.widgets.active_members'),
                 $this->valueWithDelta((string) $metrics['active_members'], $activeDelta),
             )
                 ->icon('heroicon-o-user-group')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.(string) $previous['active_members'].' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => (string) $previous['active_members']]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'New Members',
+                __('app.widgets.new_members'),
                 $this->valueWithDelta((string) $metrics['new_signups'], $signupDelta),
             )
                 ->icon('heroicon-o-user-plus')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.(string) $previous['new_signups'].' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => (string) $previous['new_signups']]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'Renewals',
+                __('app.widgets.renewals'),
                 $this->valueWithDelta((string) $metrics['renewals'], $renewalDelta),
             )
                 ->icon('heroicon-o-arrow-path')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.(string) $previous['renewals'].' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => (string) $previous['renewals']]))
                 ->descriptionColor('gray'),
             Stat::make(
-                'Expired / Not Renewed',
+                __('app.widgets.expired_not_renewed'),
                 $this->valueWithDelta((string) $metrics['expired_not_renewed'], $expiredDelta),
             )
                 ->icon('heroicon-o-x-circle')
                 ->extraAttributes(['class' => $this->primaryStatIconClasses()])
-                ->description('vs '.(string) $previous['expired_not_renewed'].' previous period')
+                ->description(__('app.widgets.vs_previous_period', ['count' => (string) $previous['expired_not_renewed']]))
                 ->descriptionColor('gray'),
         ];
     }

@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\Permission\Models\Role;
 
 /**
- * Read-only roles listing (for client permissions UI).
+ * Read-only roles listing (for permissions UI).
  */
 class RolesController extends ApiController
 {

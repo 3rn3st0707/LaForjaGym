@@ -11,14 +11,14 @@ class CreateUser extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'New User';
+        return __('app.actions.new', ['resource' => UserResource::getModelLabel()]);
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Administration',
-            UserResource::getUrl('index')   => 'Users',
+            __('app.navigation.groups.administration'),
+            UserResource::getUrl('index') => UserResource::getNavigationLabel(),
         ];
     }
 }

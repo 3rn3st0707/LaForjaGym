@@ -2,28 +2,28 @@
 
 namespace App\Filament\Resources\Subscriptions\Tables;
 
-use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Filament\Resources\Subscriptions\Schemas\SubscriptionForm;
+use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Models\Member;
 use App\Models\Plan;
 use App\Models\Subscription;
-use Filament\Actions\DeleteAction;
+use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\CreateAction;
-use Filament\Actions\Action;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\ActionGroup;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\ViewAction;
-use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -31,9 +31,6 @@ class SubscriptionTable
 {
     /**
      * Configure the subscription table schema.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function configure(Table $table): Table
     {
@@ -42,16 +39,16 @@ class SubscriptionTable
                 TextColumn::make('id')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('member.name')
-                    ->label('Member')
-                    ->description(fn($record): string => $record->member->code),
+                    ->label(__('app.fields.member'))
+                    ->description(fn ($record): string => $record->member->code),
                 TextColumn::make('plan.name')
-                    ->label('Plan')
-                    ->description(fn($record): string => $record->plan->code),
+                    ->label(__('app.fields.plan'))
+                    ->description(fn ($record): string => $record->plan->code),
                 TextColumn::make('start_date')
-                    ->label('Start Date')
+                    ->label(__('app.fields.start_date'))
                     ->date(),
                 TextColumn::make('end_date')
-                    ->label('End Date')
+                    ->label(__('app.fields.end_date'))
                     ->date(),
                 TextColumn::make('created_at')
                     ->date()
@@ -67,102 +64,98 @@ class SubscriptionTable
                         : 'heroicon-o-ticket'
                     )
             )
-	            ->emptyStateHeading(function ($livewire): string {
-                // If no members exist
-                if (!Member::exists()) {
-                    return 'No Members';
+            ->emptyStateHeading(function ($livewire): string {
+                if (! Member::exists()) {
+                    return __('app.empty.no_records', ['records' => __('app.resources.members.plural')]);
                 }
 
-                // If no plans exist
-                if (!Plan::exists()) {
-                    return 'No Plans';
+                if (! Plan::exists()) {
+                    return __('app.empty.no_records', ['records' => __('app.resources.plans.plural')]);
                 }
 
-                $dates       = $livewire->getTableFilterState('date') ?? [];
+                $records = __('app.resources.subscriptions.plural');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+
+                $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-	                $tab         = $livewire->activeTab;
-	                $heading     = [
-	                    'upcoming' => 'No Upcoming Subscriptions',
-	                    'ongoing'  => 'No Ongoing Subscriptions',
-	                    'expiring' => 'No Expiring Subscriptions',
-	                    'expired'  => 'No Expired Subscriptions',
-	                    'renewed'  => 'No Renewed Subscriptions',
-	                ][$tab] ?? 'No Subscriptions';
 
-                if (!$from && !$to) {
-                    return $heading;
+                if (! $from && ! $to) {
+                    return $status
+                        ? __('app.empty.no_status_records', ['status' => $status, 'records' => $records])
+                        : __('app.empty.no_records', ['records' => $records]);
                 }
 
                 if ($tab === 'all') {
-                    return 'No Subscriptions in Date Range';
+                    return __('app.empty.no_records_in_range', ['records' => $records]);
                 }
 
                 return Subscription::where('status', $tab)->exists()
-                    ? ($heading . ' in Date Range')
-                    : $heading;
+                    ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
+                    : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
-	            ->emptyStateDescription(function ($livewire): ?string {
-                // If no members exist
-                if (!Member::exists()) {
-                    return 'Create a member to get started.';
-                }
-                // If no plans exist
-                if (!Plan::exists()) {
-                    return 'Create a plan to get started.';
+            ->emptyStateDescription(function ($livewire): ?string {
+                if (! Member::exists()) {
+                    return __('app.empty.create_to_get_started', ['resource' => __('app.resources.members.singular')]);
                 }
 
-                $dates               = $livewire->getTableFilterState('date') ?? [];
-                [$fromRaw, $toRaw]   = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $tab                 = $livewire->activeTab;
-	                $defaultDescriptions = [
-	                    'upcoming' => 'There are no upcoming subscriptions.',
-	                    'ongoing'  => 'There are no subscriptions currently ongoing.',
-	                    'expiring' => 'There are no subscriptions marked as expiring.',
-	                    'expired'  => 'There are no subscriptions that have expired.',
-	                    'renewed'  => 'There are no subscriptions that have been renewed.',
-	                ];
-
-                if (!$fromRaw && !$toRaw) {
-                    return $defaultDescriptions[$tab] ?? 'Create a subscription to get started.';
+                if (! Plan::exists()) {
+                    return __('app.empty.create_to_get_started', ['resource' => __('app.resources.plans.singular')]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : 'the beginning';
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : 'today';
+                $records = __('app.resources.subscriptions.plural');
+                $record = __('app.resources.subscriptions.singular');
+                $tab = (string) ($livewire->activeTab ?? 'all');
+                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+
+                $dates = $livewire->getTableFilterState('date') ?? [];
+                [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
+
+                if (! $fromRaw && ! $toRaw) {
+                    return $status
+                        ? __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status])
+                        : __('app.empty.create_to_get_started', ['resource' => $record]);
+                }
+
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
 
                 if ($tab === 'all') {
-                    return "We found no subscriptions created between {$from} and {$to}.";
+                    return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
                 }
 
-                if (!Subscription::where('status', $tab)->exists()) {
-                    return $defaultDescriptions[$tab] ?? 'Create a subscription to get started.';
+                if (! Subscription::where('status', $tab)->exists()) {
+                    return __('app.empty.no_records_marked_as', ['records' => $records, 'status' => $status]);
                 }
 
-                return "We found no {$tab} subscriptions between {$from} and {$to}.";
+                return __('app.empty.found_none_status_between', ['status' => $status, 'records' => $records, 'from' => $from, 'to' => $to]);
             })
             ->emptyStateActions([
                 CreateAction::make()
                     ->icon('heroicon-o-plus')
-                    ->label('New subscription')
-                    ->visible(fn() => Member::exists() && Plan::exists()),
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.subscriptions.singular')]))
+                    ->visible(fn () => Member::exists() && Plan::exists()),
                 Action::make('create_member')
                     ->icon('heroicon-o-plus')
-                    ->label('New member')
-                    ->url(fn() => route('filament.admin.resources.members.create'))
-                    ->hidden(fn() => Member::exists()),
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.members.singular')]))
+                    ->url(fn () => route('filament.admin.resources.members.create'))
+                    ->hidden(fn () => Member::exists()),
                 Action::make('create_plan')
                     ->icon('heroicon-o-plus')
-                    ->label('New plan')
-                    ->url(fn() => route('filament.admin.resources.plans.create'))
-                    ->hidden(fn() => Plan::exists()),
+                    ->label(__('app.actions.new', ['resource' => __('app.resources.plans.singular')]))
+                    ->url(fn () => route('filament.admin.resources.plans.create'))
+                    ->hidden(fn () => Plan::exists()),
             ])
             ->filters([
                 TrashedFilter::make(),
                 Filter::make('date')
                     ->schema([
                         DatePicker::make('date_from')
+                            ->label(__('app.fields.date_from'))
                             ->native(false)
                             ->suffixIcon('heroicon-m-calendar-days'),
                         DatePicker::make('date_to')
+                            ->label(__('app.fields.date_to'))
                             ->native(false)
                             ->suffixIcon('heroicon-m-calendar-days'),
                     ])
@@ -170,90 +163,90 @@ class SubscriptionTable
                         return $query
                             ->when(
                                 $data['date_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['date_to'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
-                    })
+                    }),
             ])
-	            ->recordActions([
-	                ActionGroup::make([
-	                    ActionGroup::make([
-	                        Action::make('heading')
-	                            ->label('Change Status')
-	                            ->disabled()
-	                            ->color('gray')
-	                            ->hidden(fn($record) => in_array($record->status->value, ['expired', 'upcoming', 'renewed'])),
+            ->recordActions([
+                ActionGroup::make([
+                    ActionGroup::make([
+                        Action::make('heading')
+                            ->label(__('app.actions.change_status'))
+                            ->disabled()
+                            ->color('gray')
+                            ->hidden(fn ($record) => in_array($record->status->value, ['expired', 'upcoming', 'renewed'])),
                         Action::make('mark_expiring')
-                            ->label('Mark as expiring')
+                            ->label(__('app.actions.mark_as_expiring'))
                             ->color('warning')
                             ->requiresConfirmation()
-                            ->action(fn(Subscription $record) => tap($record, function ($r) {
+                            ->action(fn (Subscription $record) => tap($record, function ($r) {
                                 $r->update(['status' => 'expiring']);
                                 Notification::make()
-                                    ->title('Subscription marked as expiring')
+                                    ->title(__('app.notifications.subscription_marked_as_expiring'))
                                     ->warning()
                                     ->send();
                             }))
-                            ->visible(fn($record) => $record->status->value == 'ongoing'),
-	                        Action::make('mark_expired')
-	                            ->label('Mark as expired')
-	                            ->color('danger')
-	                            ->requiresConfirmation()
-                            ->action(fn(Subscription $record) => tap($record, function ($r) {
-	                                $r->update(['status' => 'expired']);
+                            ->visible(fn ($record) => $record->status->value == 'ongoing'),
+                        Action::make('mark_expired')
+                            ->label(__('app.actions.mark_as_expired'))
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->action(fn (Subscription $record) => tap($record, function ($r) {
+                                $r->update(['status' => 'expired']);
                                 Notification::make()
-                                    ->title('Subscription marked as expired')
+                                    ->title(__('app.notifications.subscription_marked_as_expired'))
                                     ->danger()
                                     ->send();
                             }))
-	                            ->visible(fn($record) => in_array($record->status->value, ['ongoing', 'expiring'])),
-	                    ])->dropdown(false),
-	                    ActionGroup::make([
-	                        Action::make('heading_actions')
-	                            ->label('Record Actions')
-	                            ->disabled()
-	                            ->color('gray'),
-	                        Action::make('renew')
-	                            ->label('Renew')
-	                            ->icon('heroicon-m-arrow-path')
-	                            ->color('success')
-	                            ->modalHeading('Renew Subscription')
-	                            ->modalSubmitActionLabel('Renew')
-	                            ->modalWidth('6xl')
-	                            ->closeModalByClickingAway(false)
-	                            ->visible(function (Subscription $record): bool {
-	                                if (! in_array($record->status->value, ['expiring', 'expired'])) {
-	                                    return false;
-	                                }
+                            ->visible(fn ($record) => in_array($record->status->value, ['ongoing', 'expiring'])),
+                    ])->dropdown(false),
+                    ActionGroup::make([
+                        Action::make('heading_actions')
+                            ->label(__('app.actions.record_actions'))
+                            ->disabled()
+                            ->color('gray'),
+                        Action::make('renew')
+                            ->label(__('app.actions.renew'))
+                            ->icon('heroicon-m-arrow-path')
+                            ->color('success')
+                            ->modalHeading(__('app.actions.renew'))
+                            ->modalSubmitActionLabel(__('app.actions.renew'))
+                            ->modalWidth('6xl')
+                            ->closeModalByClickingAway(false)
+                            ->visible(function (Subscription $record): bool {
+                                if (! in_array($record->status->value, ['expiring', 'expired'])) {
+                                    return false;
+                                }
 
-	                                if ($record->renewals()->exists()) {
-	                                    return false;
-	                                }
+                                if ($record->renewals()->exists()) {
+                                    return false;
+                                }
 
-	                                $today = Carbon::today(config('app.timezone'));
+                                $today = Carbon::today(config('app.timezone'));
 
-	                                return ! Subscription::query()
-	                                    ->where('member_id', $record->member_id)
-	                                    ->whereDate('start_date', '>', $today)
-	                                    ->exists();
-	                            })
-	                            ->schema(fn (Subscription $record): array => SubscriptionForm::renewSchema($record))
-	                            ->action(function (Subscription $record, array $data): void {
-	                                SubscriptionForm::handleRenew($record, $data);
-	                            }),
-	                        ViewAction::make()
-	                            ->url(fn($record) => SubscriptionResource::getUrl('view', ['record' => $record])),
-	                        EditAction::make()
-	                            ->hiddenLabel()
-	                            ->hidden(fn($record) => in_array($record->status->value, ['expired', 'renewed']))
-	                            ->url(fn($record) => SubscriptionResource::getUrl('edit', ['record' => $record])),
-	                        DeleteAction::make()->hiddenLabel(),
-	                    ])->dropdown(false),
-	                ]),
-	            ])
+                                return ! Subscription::query()
+                                    ->where('member_id', $record->member_id)
+                                    ->whereDate('start_date', '>', $today)
+                                    ->exists();
+                            })
+                            ->schema(fn (Subscription $record): array => SubscriptionForm::renewSchema($record))
+                            ->action(function (Subscription $record, array $data): void {
+                                SubscriptionForm::handleRenew($record, $data);
+                            }),
+                        ViewAction::make()
+                            ->url(fn ($record) => SubscriptionResource::getUrl('view', ['record' => $record])),
+                        EditAction::make()
+                            ->hiddenLabel()
+                            ->hidden(fn ($record) => in_array($record->status->value, ['expired', 'renewed']))
+                            ->url(fn ($record) => SubscriptionResource::getUrl('edit', ['record' => $record])),
+                        DeleteAction::make()->hiddenLabel(),
+                    ])->dropdown(false),
+                ]),
+            ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
@@ -261,11 +254,10 @@ class SubscriptionTable
                     RestoreBulkAction::make(),
                 ]),
             ])
-	            ->modifyQueryUsing(fn(Builder $query) => $query
-	                ->withoutGlobalScopes([
-	                    SoftDeletingScope::class,
-	                ])
-	                ->withCount('renewals'));
-	    }
-
-	}
+            ->modifyQueryUsing(fn (Builder $query) => $query
+                ->withoutGlobalScopes([
+                    SoftDeletingScope::class,
+                ])
+                ->withCount('renewals'));
+    }
+}

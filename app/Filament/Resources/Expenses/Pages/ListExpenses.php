@@ -19,46 +19,46 @@ class ListExpenses extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Add expense')
+                ->label(__('app.actions.add_expense'))
                 ->icon('heroicon-m-plus')
-                ->modalHeading('Add Expense')
-                ->modalSubmitActionLabel('Save')
+                ->modalHeading(__('app.actions.add_expense'))
+                ->modalSubmitActionLabel(__('app.actions.save'))
                 ->createAnother()
-                ->createAnotherAction(fn($action) => $action->label('Save & add another'))
+                ->createAnotherAction(fn ($action) => $action->label(__('app.actions.save_add_another')))
                 ->modalWidth(Width::ScreenLarge)
                 ->closeModalByClickingAway(false)
-                ->hidden(!Expense::exists()),
+                ->hidden(! Expense::exists()),
         ];
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            'Billing',
-            'Expenses',
+            __('app.navigation.groups.billing'),
+            ExpenseResource::getNavigationLabel(),
         ];
     }
 
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('All'),
-            'pending' => Tab::make('Pending')
+            'all' => Tab::make(__('app.common.all')),
+            'pending' => Tab::make(__('app.status.pending'))
                 ->badge(Expense::query()->where('status', 'pending')->count())
                 ->badgeColor(Status::Pending->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'pending')),
-            'paid' => Tab::make('Paid')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'pending')),
+            'paid' => Tab::make(__('app.status.paid'))
                 ->badge(Expense::query()->where('status', 'paid')->count())
                 ->badgeColor(Status::Paid->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'paid')),
-            'overdue' => Tab::make('Overdue')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'paid')),
+            'overdue' => Tab::make(__('app.status.overdue'))
                 ->badge(Expense::query()->where('status', 'overdue')->count())
                 ->badgeColor(Status::Overdue->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'overdue')),
-            'cancelled' => Tab::make('Cancelled')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'overdue')),
+            'cancelled' => Tab::make(__('app.status.cancelled'))
                 ->badge(Expense::query()->where('status', 'cancelled')->count())
                 ->badgeColor(Status::Cancelled->getColor())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'cancelled')),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'cancelled')),
         ];
     }
 }

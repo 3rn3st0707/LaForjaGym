@@ -23,7 +23,7 @@ class RecentTransactionsTableWidget extends TableWidget
 
     protected static ?int $sort = -35;
 
-    protected static ?string $heading = 'Recent Transactions';
+    protected static ?string $heading = null;
 
     /**
      * @var int | string | array<string, int | null>
@@ -37,6 +37,7 @@ class RecentTransactionsTableWidget extends TableWidget
     {
         return $table
             ->paginated(false)
+            ->heading(__('app.widgets.recent_transactions'))
             ->query(function (): Builder {
                 $range = AnalyticsDateRange::fromFilters($this->pageFilters);
 
@@ -48,20 +49,20 @@ class RecentTransactionsTableWidget extends TableWidget
             })
             ->columns([
                 TextColumn::make('invoice.number')
-                    ->label('Invoice')
+                    ->label(__('app.resources.invoices.singular'))
                     ->copyable()
                     ->wrap(),
                 TextColumn::make('occurred_at')
-                    ->label('Date')
-                    ->state(fn (InvoiceTransaction $record): string => $record->occurred_at?->timezone(config('app.timezone'))?->format('d M Y') ?? '')
+                    ->label(__('app.fields.date'))
+                    ->state(fn (InvoiceTransaction $record): string => $record->occurred_at?->timezone(config('app.timezone'))?->translatedFormat('d M Y') ?? '')
                     ->description(fn (InvoiceTransaction $record): string => $record->occurred_at?->timezone(config('app.timezone'))?->format('h:i A') ?? '')
                     ->sortable(),
                 TextColumn::make('type')
-                    ->label('Status')
+                    ->label(__('app.fields.status'))
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'payment' => 'Payment',
-                        'refund' => 'Refund',
+                        'payment' => __('app.transactions.payment'),
+                        'refund' => __('app.transactions.refund'),
                         default => ucfirst($state),
                     })
                     ->color(fn (string $state): string => match ($state) {
@@ -70,11 +71,11 @@ class RecentTransactionsTableWidget extends TableWidget
                         default => 'gray',
                     }),
                 TextColumn::make('amount')
-                    ->label('Amount')
+                    ->label(__('app.fields.amount'))
                     ->alignRight()
                     ->state(fn (InvoiceTransaction $record): string => ($record->type === 'refund' ? '-' : '').Helpers::formatCurrency((float) $record->amount)),
                 TextColumn::make('payment_method')
-                    ->label('Method')
+                    ->label(__('app.fields.method'))
                     ->formatStateUsing(fn (?string $state): string => PaymentMethod::channelLabel($state)),
             ]);
     }

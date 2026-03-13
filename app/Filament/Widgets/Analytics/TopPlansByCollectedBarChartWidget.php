@@ -6,6 +6,7 @@ use App\Services\Analytics\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
+use Illuminate\Contracts\Support\Htmlable;
 
 /**
  * Bar chart showing the top-performing plans by collected amount.
@@ -15,8 +16,6 @@ class TopPlansByCollectedBarChartWidget extends ChartWidget
     use InteractsWithPageFilters;
 
     protected static ?int $sort = -37;
-
-    protected ?string $heading = 'Top Plans (Collected)';
 
     protected ?string $maxHeight = '320px';
 
@@ -31,6 +30,11 @@ class TopPlansByCollectedBarChartWidget extends ChartWidget
     protected function getType(): string
     {
         return 'bar';
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return __('app.widgets.top_plans_collected');
     }
 
     /**
@@ -49,7 +53,7 @@ class TopPlansByCollectedBarChartWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Collected',
+                    'label' => __('app.analytics.collected'),
                     'data' => $values,
                     'backgroundColor' => 'rgba(59, 130, 246, 0.75)',
                 ],

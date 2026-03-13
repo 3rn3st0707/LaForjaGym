@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\Subscriptions\Pages;
 
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use App\Filament\Resources\Subscriptions\SubscriptionResource;
-use Filament\Actions;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditSubscription extends EditRecord
@@ -16,7 +15,7 @@ class EditSubscription extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Edit ' . $this->record->member->name;
+        return __('app.actions.edit', ['resource' => SubscriptionResource::getModelLabel()]);
     }
 
     protected function getHeaderActions(): array
@@ -32,9 +31,9 @@ class EditSubscription extends EditRecord
     public function getBreadcrumbs(): array
     {
         return [
-            'Memberships',
-            SubscriptionResource::getUrl('index')   => 'Subscriptions',
-            $this->record->member->name
+            __('app.navigation.groups.memberships'),
+            SubscriptionResource::getUrl('index') => SubscriptionResource::getNavigationLabel(),
+            $this->record->member->name,
         ];
     }
 }

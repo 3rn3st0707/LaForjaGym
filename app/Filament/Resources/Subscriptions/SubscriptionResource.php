@@ -2,29 +2,41 @@
 
 namespace App\Filament\Resources\Subscriptions;
 
-use Filament\Schemas\Schema;
-use App\Filament\Resources\Subscriptions\Pages\ListSubscriptions;
 use App\Filament\Resources\Subscriptions\Pages\CreateSubscription;
-use App\Filament\Resources\Subscriptions\Pages\ViewSubscription;
 use App\Filament\Resources\Subscriptions\Pages\EditSubscription;
-use Filament\Resources\Pages\Page;
+use App\Filament\Resources\Subscriptions\Pages\ListSubscriptions;
+use App\Filament\Resources\Subscriptions\Pages\ViewSubscription;
 use App\Filament\Resources\Subscriptions\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Subscriptions\Schemas\SubscriptionForm;
 use App\Filament\Resources\Subscriptions\Schemas\SubscriptionInfolist;
 use App\Filament\Resources\Subscriptions\Tables\SubscriptionTable;
 use App\Models\Subscription;
+use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
 class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
+    public static function getModelLabel(): string
+    {
+        return __('app.resources.subscriptions.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.resources.subscriptions.plural');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return static::getPluralModelLabel();
+    }
+
     /**
      * Define the form schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function form(Schema $schema): Schema
     {
@@ -33,9 +45,6 @@ class SubscriptionResource extends Resource
 
     /**
      * Define the table for listing records in the resource.
-     *
-     * @param Table $table
-     * @return Table
      */
     public static function table(Table $table): Table
     {
@@ -44,9 +53,6 @@ class SubscriptionResource extends Resource
 
     /**
      * Define the infolist schema for the resource.
-     *
-     * @param Schema $schema
-     * @return Schema
      */
     public static function infolist(Schema $schema): Schema
     {
@@ -61,7 +67,7 @@ class SubscriptionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            InvoicesRelationManager::class
+            InvoicesRelationManager::class,
         ];
     }
 
