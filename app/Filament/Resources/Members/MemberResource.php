@@ -11,15 +11,19 @@ use App\Filament\Resources\Members\Schemas\MemberForm;
 use App\Filament\Resources\Members\Schemas\MemberInfolist;
 use App\Filament\Resources\Members\Tables\MemberTable;
 use App\Models\Member;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MemberResource extends Resource
 {
     protected static ?string $model = Member::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModelLabel(): string
     {
@@ -34,6 +38,40 @@ class MemberResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'name',
+            'code',
+            'email',
+            'contact',
+        ];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Member $record */
+        $details = [];
+
+        if (filled($record->code)) {
+            $details[__('app.fields.code')] = $record->code;
+        }
+
+        if (filled($record->email)) {
+            $details[__('app.fields.email')] = $record->email;
+        }
+
+        if (filled($record->contact)) {
+            $details[__('app.fields.contact')] = $record->contact;
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        return $details;
     }
 
     /**

@@ -6,14 +6,19 @@ use App\Filament\Resources\Expenses\Pages\ListExpenses;
 use App\Filament\Resources\Expenses\Schemas\ExpenseForm;
 use App\Filament\Resources\Expenses\Schemas\ExpenseInfolist;
 use App\Filament\Resources\Expenses\Tables\ExpenseTable;
+use App\Helpers\Helpers;
 use App\Models\Expense;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ExpenseResource extends Resource
 {
     protected static ?string $model = Expense::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModelLabel(): string
     {
@@ -28,6 +33,36 @@ class ExpenseResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'name',
+            'category',
+            'vendor',
+            'notes',
+        ];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Expense $record */
+        $details = [];
+
+        if ($record->date) {
+            $details[__('app.fields.date')] = $record->date->toDateString();
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        if (! is_null($record->amount)) {
+            $details[__('app.fields.amount')] = Helpers::formatCurrency((float) $record->amount);
+        }
+
+        return $details;
     }
 
     public static function form(Schema $schema): Schema

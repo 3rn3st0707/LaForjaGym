@@ -10,10 +10,13 @@ use App\Models\Service;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModelLabel(): string
     {
@@ -28,6 +31,26 @@ class ServiceResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'name',
+            'description',
+        ];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Service $record */
+        if (blank($record->description)) {
+            return [];
+        }
+
+        return [
+            __('app.fields.description') => $record->description,
+        ];
     }
 
     public static function form(Schema $schema): Schema

@@ -11,15 +11,19 @@ use App\Filament\Resources\Enquiries\Schemas\EnquiryForm;
 use App\Filament\Resources\Enquiries\Schemas\EnquiryInfolist;
 use App\Filament\Resources\Enquiries\Tables\EnquiryTable;
 use App\Models\Enquiry;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class EnquiryResource extends Resource
 {
     protected static ?string $model = Enquiry::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModelLabel(): string
     {
@@ -34,6 +38,44 @@ class EnquiryResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'name',
+            'email',
+            'contact',
+        ];
+    }
+
+    public static function modifyGlobalSearchQuery(Builder $query, string $search): void
+    {
+        $query->with(['user']);
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Enquiry $record */
+        $details = [];
+
+        if (filled($record->contact)) {
+            $details[__('app.fields.contact')] = $record->contact;
+        }
+
+        if (filled($record->start_by)) {
+            $details[__('app.fields.start_by')] = $record->start_by->toDateString();
+        }
+
+        if ($record->user?->name) {
+            $details[__('app.fields.handled_by')] = $record->user->name;
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        return $details;
     }
 
     /**

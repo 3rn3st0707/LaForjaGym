@@ -9,16 +9,21 @@ use App\Filament\Resources\Invoices\RelationManagers\InvoiceTransactionsRelation
 use App\Filament\Resources\Invoices\Schemas\InvoiceForm;
 use App\Filament\Resources\Invoices\Schemas\InvoiceInfolist;
 use App\Filament\Resources\Invoices\Tables\InvoiceTable;
+use App\Helpers\Helpers;
 use App\Models\Invoice;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
+
+    protected static ?string $recordTitleAttribute = 'number';
 
     public static function getModelLabel(): string
     {
@@ -33,6 +38,47 @@ class InvoiceResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'number',
+            'subscription.member.name',
+            'subscription.member.code',
+            'subscription.member.email',
+            'subscription.member.contact',
+            'subscription.plan.name',
+        ];
+    }
+
+    public static function modifyGlobalSearchQuery(Builder $query, string $search): void
+    {
+        $query->with(['subscription.member', 'subscription.plan']);
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Invoice $record */
+        $details = [];
+
+        if ($record->subscription?->member?->name) {
+            $details[__('app.fields.member')] = $record->subscription->member->name;
+        }
+
+        if ($record->date) {
+            $details[__('app.fields.invoice_date')] = $record->date->toDateString();
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        if (! is_null($record->total_amount)) {
+            $details[__('app.fields.total_amount')] = Helpers::formatCurrency((float) $record->total_amount);
+        }
+
+        return $details;
     }
 
     public static function canCreate(): bool

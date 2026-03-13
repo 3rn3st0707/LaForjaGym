@@ -7,9 +7,12 @@ use App\Filament\Resources\FollowUps\Schemas\FollowUpForm;
 use App\Filament\Resources\FollowUps\Schemas\FollowUpInfolist;
 use App\Filament\Resources\FollowUps\Tables\FollowUpTable;
 use App\Models\FollowUp;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class FollowUpResource extends Resource
 {
@@ -28,6 +31,57 @@ class FollowUpResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'enquiry.name',
+            'user.name',
+            'method',
+            'outcome',
+        ];
+    }
+
+    public static function modifyGlobalSearchQuery(Builder $query, string $search): void
+    {
+        $query->with(['enquiry', 'user']);
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        /** @var FollowUp $record */
+        $title = $record->enquiry?->name;
+
+        if (blank($title)) {
+            return static::getModelLabel();
+        }
+
+        return (string) $title;
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var FollowUp $record */
+        $details = [];
+
+        if ($record->schedule_date) {
+            $details[__('app.fields.schedule_date')] = $record->schedule_date->toDateString();
+        }
+
+        if ($record->user?->name) {
+            $details[__('app.fields.handled_by')] = $record->user->name;
+        }
+
+        if (filled($record->method)) {
+            $details[__('app.fields.method')] = $record->method;
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        return $details;
     }
 
     /**

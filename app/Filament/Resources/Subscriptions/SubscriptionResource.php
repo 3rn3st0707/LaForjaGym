@@ -11,10 +11,13 @@ use App\Filament\Resources\Subscriptions\Schemas\SubscriptionForm;
 use App\Filament\Resources\Subscriptions\Schemas\SubscriptionInfolist;
 use App\Filament\Resources\Subscriptions\Tables\SubscriptionTable;
 use App\Models\Subscription;
+use App\Support\Filament\GlobalSearchBadge;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class SubscriptionResource extends Resource
 {
@@ -33,6 +36,54 @@ class SubscriptionResource extends Resource
     public static function getNavigationLabel(): string
     {
         return static::getPluralModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [
+            'member.name',
+            'member.code',
+            'member.email',
+            'member.contact',
+            'plan.name',
+            'plan.code',
+        ];
+    }
+
+    public static function modifyGlobalSearchQuery(Builder $query, string $search): void
+    {
+        $query->with(['member', 'plan']);
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        /** @var Subscription $record */
+        $title = trim(implode(' — ', array_filter([
+            $record->member?->name,
+            $record->plan?->name,
+        ], fn (?string $value): bool => filled($value))));
+
+        return filled($title) ? $title : static::getModelLabel();
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Subscription $record */
+        $details = [];
+
+        if ($record->start_date) {
+            $details[__('app.fields.start_date')] = $record->start_date->toDateString();
+        }
+
+        if ($record->end_date) {
+            $details[__('app.fields.end_date')] = $record->end_date->toDateString();
+        }
+
+        if ($record->status) {
+            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
+        }
+
+        return $details;
     }
 
     /**
