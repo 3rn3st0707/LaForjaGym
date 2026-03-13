@@ -307,7 +307,6 @@ return [
         ],
         'actions' => [
             'apply' => 'Apply',
-            'export' => 'Export',
         ],
     ],
     'locales' => [

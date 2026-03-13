@@ -90,3 +90,13 @@ it('ignores unsupported locales', function (): void {
 
     expect($repository->putCount)->toBe(0);
 });
+
+it('renders the current locale label in the trigger', function (): void {
+    config()->set('app.supported_locales', ['en', 'fr', 'ar']);
+
+    app()->setLocale('en');
+
+    Livewire::test(LocaleSwitcher::class)
+        ->assertSeeHtml('fi-locale-switcher-label')
+        ->assertSee('English');
+});

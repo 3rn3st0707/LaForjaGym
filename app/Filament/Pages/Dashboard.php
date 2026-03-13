@@ -223,16 +223,6 @@ class Dashboard extends \Filament\Pages\Dashboard
     }
 
     /**
-     * Placeholder for the Export button.
-     *
-     * Export behavior will be implemented later.
-     */
-    public function export(): void
-    {
-        //
-    }
-
-    /**
      * Apply a preset range to the dashboard filters.
      *
      * @param  '7days'|'30days'|'month'|'quarter'|'year'  $preset

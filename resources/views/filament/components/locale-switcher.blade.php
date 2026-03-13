@@ -10,6 +10,9 @@
                 aria-label="{{ $this->options[$this->locale]['label'] ?? $this->locale }}"
             >
                 <span class="text-base leading-none">{{ $this->currentFlag }}</span>
+                <span class="fi-locale-switcher-label text-sm font-medium">
+                    {{ $this->options[$this->locale]['label'] ?? $this->locale }}
+                </span>
                 <span class="sr-only">{{ $this->options[$this->locale]['label'] ?? $this->locale }}</span>
             </x-filament::button>
         </x-slot>
