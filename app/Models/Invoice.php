@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Status;
 use App\Helpers\Helpers;
+use App\Support\Billing\InvoiceCalculator;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -156,17 +157,19 @@ class Invoice extends Model
             }
             Helpers::updateLastNumber('invoice', $invoice->number, $invoice->date);
 
-            $grossFee = $invoice->subscription_fee ?? 0;
             $taxRate = Helpers::getTaxRate() ?: 0;
-            $discountAmount = $invoice->discount_amount ?? 0;
-            $netFee = max($grossFee - $discountAmount, 0);
-            $netFee = round($netFee, 2);
-            $totalTax = round(($grossFee * $taxRate) / 100, 2);
-            $totalAmount = $netFee + $totalTax;
+            $summary = InvoiceCalculator::summary(
+                fee: (float) ($invoice->subscription_fee ?? 0),
+                taxRatePercent: $taxRate,
+                discountAmount: (float) ($invoice->discount_amount ?? 0),
+                paidAmount: (float) ($invoice->paid_amount ?? 0),
+            );
 
-            $invoice->subscription_fee = $netFee;
-            $invoice->total_amount = $totalAmount;
-            $invoice->tax = $totalTax;
+            $invoice->subscription_fee = $summary['fee'];
+            $invoice->discount_amount = $summary['discount_amount'];
+            $invoice->tax = $summary['tax'];
+            $invoice->total_amount = $summary['total'];
+            $invoice->paid_amount = $summary['paid'];
         });
 
         static::created(function (self $invoice): void {

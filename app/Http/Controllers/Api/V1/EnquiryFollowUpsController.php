@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\Api\V1\EnquiryFollowUpStoreRequest;
 use App\Http\Resources\V1\FollowUpResource;
 use App\Models\Enquiry;
+use App\Services\Api\QueryFilters;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -20,9 +21,11 @@ class EnquiryFollowUpsController extends ApiController
     {
         $this->requirePermission($request, 'View:Enquiry');
 
+        $perPage = QueryFilters::perPage($request->query('per_page'), default: 25);
+
         $rows = $enquiry->followUps()
             ->orderByDesc('schedule_date')
-            ->paginate(25);
+            ->paginate($perPage);
 
         return FollowUpResource::collection($rows);
     }

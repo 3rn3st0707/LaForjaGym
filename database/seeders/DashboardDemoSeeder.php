@@ -196,7 +196,7 @@ class DashboardDemoSeeder extends Seeder
     private function subscriptionsNeedingInvoices(): Collection
     {
         return Subscription::query()
-            ->whereDoesntHave('invoices')
+            ->whereDoesntHave('invoices', fn ($query) => $query->withTrashed())
             ->with(['plan'])
             ->get();
     }
@@ -224,6 +224,10 @@ class DashboardDemoSeeder extends Seeder
 
             $grossFee = (float) ($plan->amount ?? 0);
             $discountAmount = $faker->boolean(35) ? round($grossFee * $faker->randomFloat(2, 0.02, 0.15), 2) : 0.0;
+
+            while (Invoice::withTrashed()->where('number', "{$invoicePrefix}-{$nextInvoiceNumber}")->exists()) {
+                $nextInvoiceNumber++;
+            }
 
             $invoice = Invoice::query()->create([
                 'number' => "{$invoicePrefix}-{$nextInvoiceNumber}",
@@ -260,7 +264,7 @@ class DashboardDemoSeeder extends Seeder
      */
     private function nextDemoInvoiceSequenceNumber(): int
     {
-        $max = Invoice::query()
+        $max = Invoice::withTrashed()
             ->pluck('number')
             ->map(function (string $number): int {
                 if (preg_match('/(\\d+)$/', $number, $matches) !== 1) {

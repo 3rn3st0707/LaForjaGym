@@ -275,21 +275,4 @@ class Dashboard extends \Filament\Pages\Dashboard
 
         $this->updatedFilters();
     }
-
-    /**
-     * Get the active range label for the header selector.
-     */
-    private function getActiveRangeLabel(): string
-    {
-        $period = (string) ($this->filters['period'] ?? '7days');
-
-        return match ($period) {
-            '30days' => __('app.dashboard.filters.periods.30days'),
-            'month' => __('app.dashboard.filters.periods.month'),
-            'quarter' => __('app.dashboard.filters.periods.quarter'),
-            'ytd', 'year' => __('app.dashboard.filters.periods.year'),
-            'custom' => __('app.dashboard.filters.periods.custom'),
-            default => __('app.dashboard.filters.periods.7days'),
-        };
-    }
 }

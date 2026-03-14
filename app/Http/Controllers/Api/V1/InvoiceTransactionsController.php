@@ -6,6 +6,7 @@ use App\Http\Requests\Api\V1\InvoiceTransactionStoreRequest;
 use App\Http\Resources\V1\InvoiceTransactionResource;
 use App\Models\Invoice;
 use App\Models\InvoiceTransaction;
+use App\Services\Api\QueryFilters;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,9 +23,11 @@ class InvoiceTransactionsController extends ApiController
     {
         $this->requirePermission($request, 'View:Invoice');
 
+        $perPage = QueryFilters::perPage($request->query('per_page'), default: 25);
+
         $transactions = $invoice->transactions()
             ->orderByDesc('occurred_at')
-            ->paginate(25);
+            ->paginate($perPage);
 
         return InvoiceTransactionResource::collection($transactions);
     }

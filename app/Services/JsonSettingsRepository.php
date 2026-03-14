@@ -19,6 +19,11 @@ class JsonSettingsRepository implements SettingsRepository
     /**
      * @var array<string, mixed>|null
      */
+    private ?array $cachedSettings = null;
+
+    /**
+     * @var array<string, mixed>|null
+     */
     protected static ?array $testOverride = null;
 
     /**
@@ -27,12 +32,17 @@ class JsonSettingsRepository implements SettingsRepository
     public function setTestOverride(?array $override): void
     {
         static::$testOverride = $override;
+        $this->cachedSettings = null;
     }
 
     public function get(): array
     {
+        if ($this->cachedSettings !== null) {
+            return $this->cachedSettings;
+        }
+
         if (static::$testOverride !== null) {
-            return $this->normalize(static::$testOverride);
+            return $this->cachedSettings = $this->normalize(static::$testOverride);
         }
 
         if (app()->runningUnitTests()) {
@@ -41,10 +51,10 @@ class JsonSettingsRepository implements SettingsRepository
             if (file_exists($exampleFilePath)) {
                 $settings = json_decode((string) file_get_contents($exampleFilePath), true) ?? [];
 
-                return $this->normalize($settings);
+                return $this->cachedSettings = $this->normalize($settings);
             }
 
-            return $this->normalize([]);
+            return $this->cachedSettings = $this->normalize([]);
         }
 
         $filePath = storage_path(self::SETTINGS_PATH);
@@ -55,13 +65,16 @@ class JsonSettingsRepository implements SettingsRepository
 
         $settings = json_decode((string) file_get_contents($filePath), true) ?? [];
 
-        return $this->normalize($settings);
+        return $this->cachedSettings = $this->normalize($settings);
     }
 
     public function put(array $settings): void
     {
+        $normalized = $this->normalize($settings);
+
         if (app()->runningUnitTests()) {
-            static::$testOverride = $this->normalize($settings);
+            static::$testOverride = $normalized;
+            $this->cachedSettings = $normalized;
 
             return;
         }
@@ -74,8 +87,10 @@ class JsonSettingsRepository implements SettingsRepository
 
         file_put_contents(
             $filePath,
-            json_encode($this->normalize($settings), JSON_PRETTY_PRINT),
+            json_encode($normalized, JSON_PRETTY_PRINT),
         );
+
+        $this->cachedSettings = $normalized;
     }
 
     private function initializeFile(string $filePath): void

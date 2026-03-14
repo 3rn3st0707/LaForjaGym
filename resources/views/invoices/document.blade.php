@@ -306,7 +306,7 @@
     default => 'badge-muted',
     };
 
-    $gross = max(((float) ($invoice->subscription_fee ?? 0)) + ((float) ($invoice->discount_amount ?? 0)), 0);
+    $gross = max((float) ($invoice->subscription_fee ?? 0), 0);
     $paidAmount = (float) ($invoice->paid_amount ?? 0);
     $dueAmount = (float) ($invoice->due_amount ?? 0);
     $taxRatePercent = $gross > 0 ? (((float) ($invoice->tax ?? 0)) / $gross) * 100 : 0;
