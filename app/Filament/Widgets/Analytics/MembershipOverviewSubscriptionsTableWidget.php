@@ -104,6 +104,8 @@ BLADE,
 
     /**
      * Build the query for the currently selected tab.
+     *
+     * @return Builder<Subscription>
      */
     protected function getActiveTabQuery(): Builder
     {
@@ -115,10 +117,12 @@ BLADE,
 
     /**
      * Query memberships that are expiring within the configured window.
+     *
+     * @return Builder<Subscription>
      */
     protected function getExpiringSoonQuery(): Builder
     {
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
         $end = $today->addDays(Helpers::getSubscriptionExpiringDays());
 
         return Subscription::query()
@@ -131,10 +135,12 @@ BLADE,
 
     /**
      * Query memberships that are already expired.
+     *
+     * @return Builder<Subscription>
      */
     protected function getExpiredQuery(): Builder
     {
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
 
         return Subscription::query()
             ->with(['member', 'plan'])
@@ -144,7 +150,7 @@ BLADE,
 
     public function table(Table $table): Table
     {
-        $today = CarbonImmutable::today(config('app.timezone'))->toDateString();
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone())->toDateString();
 
         return $table
             ->heading(null)
@@ -168,20 +174,20 @@ BLADE,
                     ->label(fn (): string => $this->activeTab === 'expired' ? __('app.widgets.days_since') : __('app.widgets.days_left'))
                     ->alignRight()
                     ->state(function (Subscription $record): string {
-                        $today = CarbonImmutable::today(config('app.timezone'));
-                        $endDate = CarbonImmutable::parse($record->end_date, config('app.timezone'))->startOfDay();
+                        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
+                        $endDate = CarbonImmutable::parse($record->end_date, \App\Support\AppConfig::timezone())->startOfDay();
 
                         if ($this->activeTab === 'expired') {
                             $days = max($endDate->diffInDays($today, false), 0);
 
-                            $unit = $days === 1 ? __('app.units.day') : __('app.units.days');
+                            $unit = (int) $days === 1 ? __('app.units.day') : __('app.units.days');
 
                             return "{$days} {$unit}";
                         }
 
                         $days = max($today->diffInDays($endDate, false), 0);
 
-                        $unit = $days === 1 ? __('app.units.day') : __('app.units.days');
+                        $unit = (int) $days === 1 ? __('app.units.day') : __('app.units.days');
 
                         return "{$days} {$unit}";
                     }),

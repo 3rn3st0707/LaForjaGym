@@ -44,6 +44,9 @@ class PlanResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<Plan>  $query
+     */
     public static function modifyGlobalSearchQuery(Builder $query, string $search): void
     {
         $query->with(['service']);
@@ -82,9 +85,7 @@ class PlanResource extends Resource
     }
 
     /**
-     * Get the Filament table columns for the plan list view.
-     *
-     * @return array
+     * Get the Filament table configuration for the list view.
      */
     public static function table(Table $table): Table
     {

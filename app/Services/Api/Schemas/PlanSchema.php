@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\Plan;
 use App\Models\Service;
 use App\Rules\ModelExists;
@@ -84,7 +85,7 @@ final class PlanSchema
             'description' => $plan->description ? (string) $plan->description : null,
             'amount' => (float) ($plan->amount ?? 0),
             'days' => (int) ($plan->days ?? 0),
-            'status' => $plan->status?->value ?? (is_string($plan->status) ? $plan->status : null),
+            'status' => Status::valueOf($plan->status),
             'created_at' => $plan->created_at?->toISOString(),
             'updated_at' => $plan->updated_at?->toISOString(),
             'deleted_at' => $plan->deleted_at?->toISOString(),

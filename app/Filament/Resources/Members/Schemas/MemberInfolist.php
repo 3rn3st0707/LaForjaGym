@@ -24,6 +24,11 @@ class MemberInfolist
                 Section::make()
                     ->heading(function (Member $record): HtmlString {
                         $status = $record->status;
+
+                        if ($status === null) {
+                            return new HtmlString(e(__('app.ui.details')));
+                        }
+
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex ml-2" :color="$color">
                                 {{ $label }}
@@ -39,7 +44,7 @@ class MemberInfolist
                     ->schema([
                         ImageEntry::make('photo')
                             ->hiddenLabel()
-                            ->defaultImageUrl(fn (Member $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
+                            ->defaultImageUrl(fn (Member $record): string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
                             ->size(180)
                             ->circular()
                             ->columnSpan(1),

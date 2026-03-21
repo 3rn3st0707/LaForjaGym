@@ -12,7 +12,6 @@ use App\Filament\Resources\Subscriptions\Schemas\SubscriptionInfolist;
 use App\Filament\Resources\Subscriptions\Tables\SubscriptionTable;
 use App\Models\Subscription;
 use App\Support\Filament\GlobalSearchBadge;
-use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -50,6 +49,9 @@ class SubscriptionResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<Subscription>  $query
+     */
     public static function modifyGlobalSearchQuery(Builder $query, string $search): void
     {
         $query->with(['member', 'plan']);
@@ -57,7 +59,7 @@ class SubscriptionResource extends Resource
 
     public static function getGlobalSearchResultTitle(Model $record): string
     {
-        /** @var Subscription $record */
+        assert($record instanceof Subscription);
         $title = trim(implode(' — ', array_filter([
             $record->member?->name,
             $record->plan?->name,
@@ -68,7 +70,7 @@ class SubscriptionResource extends Resource
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        /** @var Subscription $record */
+        assert($record instanceof Subscription);
         $details = [];
 
         if ($record->start_date) {
@@ -112,8 +114,6 @@ class SubscriptionResource extends Resource
 
     /**
      * Get the list of relations for this resource.
-     *
-     * @return array<string, string>
      */
     public static function getRelations(): array
     {
@@ -124,8 +124,6 @@ class SubscriptionResource extends Resource
 
     /**
      * Get the list of pages for this resource.
-     *
-     * @return array<string, Page>
      */
     public static function getPages(): array
     {

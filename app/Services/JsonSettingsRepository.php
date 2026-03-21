@@ -50,6 +50,7 @@ class JsonSettingsRepository implements SettingsRepository
 
             if (file_exists($exampleFilePath)) {
                 $settings = json_decode((string) file_get_contents($exampleFilePath), true) ?? [];
+                $settings = is_array($settings) ? $settings : [];
 
                 return $this->cachedSettings = $this->normalize($settings);
             }
@@ -64,6 +65,7 @@ class JsonSettingsRepository implements SettingsRepository
         }
 
         $settings = json_decode((string) file_get_contents($filePath), true) ?? [];
+        $settings = is_array($settings) ? $settings : [];
 
         return $this->cachedSettings = $this->normalize($settings);
     }
@@ -138,19 +140,28 @@ class JsonSettingsRepository implements SettingsRepository
             }
         }
 
+        /** @var array<string, mixed> $general */
+        $general = $settings['general'];
         if (
-            ! array_key_exists('locale', $settings['general']) ||
-            (! is_string($settings['general']['locale']) && $settings['general']['locale'] !== null)
+            ! array_key_exists('locale', $general) ||
+            (! is_string($general['locale']) && $general['locale'] !== null)
         ) {
-            $settings['general']['locale'] = null;
+            $general['locale'] = null;
         }
+        $settings['general'] = $general;
 
+        /** @var array<string, mixed> $notifications */
+        $notifications = $settings['notifications'];
         if (
-            ! array_key_exists('email', $settings['notifications']) ||
-            ! is_array($settings['notifications']['email'])
+            ! array_key_exists('email', $notifications) ||
+            ! is_array($notifications['email'])
         ) {
-            $settings['notifications']['email'] = [];
+            $notifications['email'] = [];
         }
+        $settings['notifications'] = $notifications;
+
+        /** @var array<string, mixed> $emailSettings */
+        $emailSettings = $settings['notifications']['email'];
 
         foreach ([
             'enabled' => false,
@@ -159,18 +170,22 @@ class JsonSettingsRepository implements SettingsRepository
             'invoice_subject_template' => 'Invoice {invoice_number} - {status}',
             'receipt_subject_template' => 'Payment received - {invoice_number}',
         ] as $key => $default) {
-            if (! array_key_exists($key, $settings['notifications']['email'])) {
-                $settings['notifications']['email'][$key] = $default;
+            if (! array_key_exists($key, $emailSettings)) {
+                $emailSettings[$key] = $default;
             }
         }
+        $settings['notifications']['email'] = $emailSettings;
 
+        /** @var array<string, mixed> $payments */
+        $payments = $settings['payments'];
         if (
-            ! array_key_exists('provider', $settings['payments']) ||
-            ! is_string($settings['payments']['provider']) ||
-            trim($settings['payments']['provider']) === ''
+            ! array_key_exists('provider', $payments) ||
+            ! is_string($payments['provider']) ||
+            trim($payments['provider']) === ''
         ) {
-            $settings['payments']['provider'] = 'stripe';
+            $payments['provider'] = 'stripe';
         }
+        $settings['payments'] = $payments;
 
         return $settings;
     }

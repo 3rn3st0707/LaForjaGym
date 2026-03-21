@@ -49,6 +49,9 @@ class EnquiryResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<Enquiry>  $query
+     */
     public static function modifyGlobalSearchQuery(Builder $query, string $search): void
     {
         $query->with(['user']);
@@ -56,7 +59,7 @@ class EnquiryResource extends Resource
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        /** @var Enquiry $record */
+        assert($record instanceof Enquiry);
         $details = [];
 
         if (filled($record->contact)) {
@@ -87,9 +90,7 @@ class EnquiryResource extends Resource
     }
 
     /**
-     * Get the Filament table columns for the enquiry list view.
-     *
-     * @return array
+     * Get the Filament table configuration for the list view.
      */
     public static function table(Table $table): Table
     {
@@ -124,6 +125,9 @@ class EnquiryResource extends Resource
         ];
     }
 
+    /**
+     * @return Builder<Enquiry>
+     */
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         return parent::getRecordRouteBindingEloquentQuery()

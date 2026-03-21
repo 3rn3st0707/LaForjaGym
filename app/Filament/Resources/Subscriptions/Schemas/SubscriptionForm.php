@@ -11,6 +11,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Support\Billing\InvoiceCalculator;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Data;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
@@ -69,16 +70,16 @@ class SubscriptionForm
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(fn (Plan $record): string => self::formatPlanOptionLabel($record))
                             ->afterStateUpdated(function (Get $get, Set $set) {
-                                $plan = Plan::find($get('plan_id'));
-                                $fee = (float) ($plan?->amount ?? 0);
+                                $plan = self::planFromState($get);
+                                $fee = (float) ($plan->amount ?? 0);
                                 $taxRate = Helpers::getTaxRate() ?: 0;
 
-                                // grab current invoices array (if any)
-                                $invoices = $get('invoices') ?? [];
+                                $invoices = self::invoiceItems($get);
 
                                 foreach ($invoices as $index => $invoice) {
-                                    $discount = (float) ($invoice['discount_amount'] ?? 0);
-                                    $paid = (float) ($invoice['paid_amount'] ?? 0);
+                                    $discount = \App\Support\Data::float($invoice['discount_amount'] ?? 0);
+                                    $paid = \App\Support\Data::float($invoice['paid_amount'] ?? 0);
+                                    $itemKey = (string) $index;
 
                                     $summary = InvoiceCalculator::summary(
                                         $fee,
@@ -88,16 +89,16 @@ class SubscriptionForm
                                     );
 
                                     // set each nested invoice field
-                                    $set("invoices.{$index}.subscription_fee", $summary['fee']);
-                                    $set("invoices.{$index}.tax", $summary['tax']);
-                                    $set("invoices.{$index}.total_amount", $summary['total']);
-                                    $set("invoices.{$index}.paid_amount", $summary['paid']);
-                                    $set("invoices.{$index}.due_amount", $summary['due']);
+                                    $set("invoices.{$itemKey}.subscription_fee", $summary['fee']);
+                                    $set("invoices.{$itemKey}.tax", $summary['tax']);
+                                    $set("invoices.{$itemKey}.total_amount", $summary['total']);
+                                    $set("invoices.{$itemKey}.paid_amount", $summary['paid']);
+                                    $set("invoices.{$itemKey}.due_amount", $summary['due']);
                                 }
 
                                 $set('end_date', Helpers::calculateSubscriptionEndDate(
-                                    $get('start_date'),
-                                    $get('plan_id'),
+                                    self::stringState($get, 'start_date'),
+                                    self::intState($get, 'plan_id'),
                                 ));
                             })
                             ->required(),
@@ -110,8 +111,8 @@ class SubscriptionForm
                             ->reactive()                         // <— also reactive
                             ->afterStateUpdated(function (Get $get, Set $set) {
                                 $set('end_date', Helpers::calculateSubscriptionEndDate(
-                                    $get('start_date'),
-                                    $get('plan_id'),
+                                    self::stringState($get, 'start_date'),
+                                    self::intState($get, 'plan_id'),
                                 ));
                             }),
                         DatePicker::make('end_date')
@@ -124,8 +125,8 @@ class SubscriptionForm
                             ->reactive()
                             ->afterStateHydrated(function (Get $get, Set $set) {
                                 $set('end_date', Helpers::calculateSubscriptionEndDate(
-                                    $get('start_date'),
-                                    $get('plan_id'),
+                                    self::stringState($get, 'start_date'),
+                                    self::intState($get, 'plan_id'),
                                 ));
                             }),
                     ]),
@@ -161,7 +162,7 @@ class SubscriptionForm
                                                 ->default(fn (Get $get) => Helpers::generateLastNumber(
                                                     'invoice',
                                                     Invoice::class,
-                                                    $get('date')
+                                                    self::stringState($get, 'date')
                                                 )),
                                             DatePicker::make('date')
                                                 ->label(__('app.fields.date'))
@@ -180,8 +181,8 @@ class SubscriptionForm
                                                 ->placeholder(__('app.placeholders.select_discount'))
                                                 ->afterStateUpdated(
                                                     function (Get $get, Set $set) {
-                                                        $fee = $get('subscription_fee') ?: 0;
-                                                        $discountPct = (int) $get('discount');
+                                                        $fee = self::floatState($get, 'subscription_fee');
+                                                        $discountPct = self::intState($get, 'discount') ?? 0;
                                                         $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
 
                                                         $set('discount_amount', round($discountAmount));
@@ -194,13 +195,13 @@ class SubscriptionForm
                                                 ->debounce(300)
                                                 ->default(0)
                                                 ->prefix(Helpers::getCurrencySymbol())
-                                                ->maxValue(fn (Get $get): float => $get('subscription_fee') ?: 0)
+                                                ->maxValue(fn (Get $get): float => self::floatState($get, 'subscription_fee'))
                                                 ->afterStateUpdated(
                                                     function (Get $get, Set $set, $livewire, TextInput $component) {
                                                         $livewire->validateOnly($component->getStatePath());
 
-                                                        $fee = $get('subscription_fee') ?: 0;
-                                                        $entered = $get('discount_amount') ?: 0;
+                                                        $fee = self::floatState($get, 'subscription_fee');
+                                                        $entered = self::floatState($get, 'discount_amount');
                                                         $clamped = min(max($entered, 0), $fee);
                                                         $set('discount_amount', $clamped);
 
@@ -217,7 +218,7 @@ class SubscriptionForm
                                                 ->debounce(300)
                                                 ->default(0)
                                                 ->prefix(Helpers::getCurrencySymbol())
-                                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline((string) ($get('payment_method') ?? null)))
+                                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline(self::stringState($get, 'payment_method')))
                                                 ->afterStateUpdated(function (Get $get, Set $set, $livewire, TextInput $component) {
                                                     $livewire->validateOnly($component->getStatePath());
                                                     self::recalculateInvoiceSummary($get, $set);
@@ -283,9 +284,12 @@ class SubscriptionForm
             ]);
     }
 
+    /**
+     * @return array<int, \Filament\Schemas\Components\Component>
+     */
     public static function renewSchema(Subscription $record): array
     {
-        $today = Carbon::today(config('app.timezone'))->toDateString();
+        $today = Carbon::today(\App\Support\AppConfig::timezone())->toDateString();
         $defaultStartDate = max(
             $today,
             $record->end_date?->copy()->addDay()->toDateString() ?? $today,
@@ -309,13 +313,13 @@ class SubscriptionForm
                         ->live()
                         ->afterStateUpdated(function (Get $get, Set $set): void {
                             $set('end_date', Helpers::calculateSubscriptionEndDate(
-                                $get('start_date'),
-                                $get('plan_id'),
+                                self::stringState($get, 'start_date'),
+                                self::intState($get, 'plan_id'),
                             ));
 
-                            $plan = $get('plan_id') ? Plan::find($get('plan_id')) : null;
-                            $fee = round($plan?->amount ?? 0);
-                            $discountPct = (int) ($get('discount') ?? 0);
+                            $plan = self::planFromState($get);
+                            $fee = round(Data::float($plan?->amount));
+                            $discountPct = self::intState($get, 'discount') ?? 0;
                             $discountAmount = round(Helpers::getDiscountAmount($discountPct, $fee));
                             $set('discount_amount', $discountAmount);
 
@@ -331,8 +335,8 @@ class SubscriptionForm
                         ->live()
                         ->afterStateUpdated(function (Get $get, Set $set): void {
                             $set('end_date', Helpers::calculateSubscriptionEndDate(
-                                $get('start_date'),
-                                $get('plan_id'),
+                                self::stringState($get, 'start_date'),
+                                self::intState($get, 'plan_id'),
                             ));
 
                             self::recalculateRenewInvoiceSummary($get, $set);
@@ -345,8 +349,8 @@ class SubscriptionForm
                         ->disabled()
                         ->dehydrated()
                         ->default(fn (Get $get): string => Helpers::calculateSubscriptionEndDate(
-                            $get('start_date'),
-                            $get('plan_id'),
+                            self::stringState($get, 'start_date'),
+                            self::intState($get, 'plan_id'),
                         ))
                         ->required(),
                 ]),
@@ -366,7 +370,7 @@ class SubscriptionForm
                                 ->default(fn (Get $get) => Helpers::generateLastNumber(
                                     'invoice',
                                     Invoice::class,
-                                    $get('invoice_date'),
+                                    self::stringState($get, 'invoice_date'),
                                 )),
                             DatePicker::make('invoice_date')
                                 ->label(__('app.fields.invoice_date'))
@@ -399,9 +403,9 @@ class SubscriptionForm
                                 ->reactive()
                                 ->placeholder(__('app.placeholders.select_discount'))
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
-                                    $plan = $get('plan_id') ? Plan::find($get('plan_id')) : null;
-                                    $fee = round($plan?->amount ?? 0);
-                                    $discountPct = (int) ($get('discount') ?? 0);
+                                    $plan = self::planFromState($get);
+                                    $fee = round(Data::float($plan?->amount));
+                                    $discountPct = self::intState($get, 'discount') ?? 0;
                                     $discountAmount = round(Helpers::getDiscountAmount($discountPct, $fee));
                                     $set('discount_amount', $discountAmount);
 
@@ -411,7 +415,11 @@ class SubscriptionForm
                                 ->label(__('app.fields.discount_amount'))
                                 ->numeric()
                                 ->minValue(0)
-                                ->maxValue(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
+                                ->maxValue(function (Get $get): float {
+                                    $plan = self::planFromState($get);
+
+                                    return round(Data::float($plan?->amount));
+                                })
                                 ->debounce(300)
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol())
@@ -428,7 +436,7 @@ class SubscriptionForm
                                 ->debounce(300)
                                 ->default(0)
                                 ->prefix(Helpers::getCurrencySymbol())
-                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline((string) ($get('payment_method') ?? null)))
+                                ->visible(fn (Get $get): bool => ! PaymentMethod::isOnline(self::stringState($get, 'payment_method')))
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
@@ -458,7 +466,11 @@ class SubscriptionForm
                                 ->readOnly()
                                 ->disabled()
                                 ->dehydrated()
-                                ->default(fn (Get $get): float => round(Plan::find($get('plan_id'))?->amount ?? 0))
+                                ->default(function (Get $get): float {
+                                    $plan = self::planFromState($get);
+
+                                    return round(Data::float($plan?->amount));
+                                })
                                 ->prefix(Helpers::getCurrencySymbol()),
                             TextInput::make('tax')
                                 ->label(fn (): string => __('app.fields.tax_with_rate', ['rate' => Helpers::getTaxRate()]))
@@ -493,17 +505,18 @@ class SubscriptionForm
      * Handle the subscription renewal process, including creating a new subscription and associated invoice.
      *
      * @param  Subscription  $record  The subscription being renewed
-     * @param  array  $data  The form data for the new subscription and invoice
+     * @param  array<string, mixed>  $data  The form data for the new subscription and invoice
      */
     public static function handleRenew(Subscription $record, array $data): void
     {
         Subscription::query()->getConnection()->transaction(function () use ($record, $data): void {
-            $timezone = config('app.timezone');
+            $timezone = \App\Support\AppConfig::timezone();
             $today = Carbon::today($timezone);
 
-            $plan = Plan::findOrFail((int) $data['plan_id']);
-            $startDate = Carbon::parse($data['start_date'])->toDateString();
-            $endDate = $data['end_date'] ?? Helpers::calculateSubscriptionEndDate($startDate, (int) $plan->id);
+            $plan = Plan::findOrFail(Data::int($data['plan_id'] ?? null));
+            $startDate = Carbon::parse(Data::string($data['start_date'] ?? null))->toDateString();
+            $endDate = Data::string($data['end_date'] ?? null)
+                ?: Helpers::calculateSubscriptionEndDate($startDate, Data::int($plan->id));
 
             $status = Carbon::parse($startDate)->gt($today)
                 ? 'upcoming'
@@ -524,22 +537,22 @@ class SubscriptionForm
                 ]);
             }
 
-            $fee = round($plan->amount);
-            $discountPct = max((int) ($data['discount'] ?? 0), 0);
-            $discountAmount = (float) ($data['discount_amount'] ?? 0);
+            $fee = round(Data::float($plan->amount));
+            $discountPct = max(Data::int($data['discount'] ?? 0), 0);
+            $discountAmount = Data::float($data['discount_amount'] ?? 0);
             $discountAmount = min(max($discountAmount, 0), $fee);
             if ($discountPct > 0 && $discountAmount <= 0) {
                 $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
             }
 
-            $paymentMethod = $data['payment_method'] ?? null;
-            $paidAmount = max((float) ($data['paid_amount'] ?? 0), 0);
+            $paymentMethod = Data::nullableString($data['payment_method'] ?? null);
+            $paidAmount = max(Data::float($data['paid_amount'] ?? 0), 0);
             if (PaymentMethod::isOnline($paymentMethod)) {
                 $paidAmount = 0;
             }
 
-            $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
-            $invoiceDueDate = Carbon::parse($data['invoice_due_date'] ?? $invoiceDate)->toDateString();
+            $invoiceDate = Carbon::parse(Data::string($data['invoice_date'] ?? null))->toDateString();
+            $invoiceDueDate = Carbon::parse(Data::string($data['invoice_due_date'] ?? $invoiceDate))->toDateString();
 
             $invoice = Invoice::create([
                 'number' => $data['invoice_number'] ?? null,
@@ -568,8 +581,8 @@ class SubscriptionForm
      */
     private static function recalculateRenewInvoiceSummary(Get $get, Set $set): void
     {
-        $plan = $get('plan_id') ? Plan::find($get('plan_id')) : null;
-        $fee = (float) ($plan?->amount ?? 0);
+        $plan = self::planFromState($get);
+        $fee = (float) ($plan->amount ?? 0);
         $taxRate = Helpers::getTaxRate() ?: 0;
 
         self::recalculateInvoiceSummary($get, $set, $fee, $taxRate);
@@ -580,13 +593,13 @@ class SubscriptionForm
      */
     private static function recalculateInvoiceSummary(Get $get, Set $set, ?float $fee = null, ?float $taxRate = null): void
     {
-        $fee = $fee ?? (float) ($get('subscription_fee') ?? 0);
+        $fee = $fee ?? self::floatState($get, 'subscription_fee');
         $taxRate = $taxRate ?? (float) (Helpers::getTaxRate() ?: 0);
 
-        $discountAmount = (float) ($get('discount_amount') ?? 0);
-        $paid = (float) ($get('paid_amount') ?? 0);
+        $discountAmount = self::floatState($get, 'discount_amount');
+        $paid = self::floatState($get, 'paid_amount');
 
-        $paymentMethod = (string) ($get('payment_method') ?? null);
+        $paymentMethod = self::stringState($get, 'payment_method');
         if (PaymentMethod::isOnline($paymentMethod)) {
             $paid = 0;
         }
@@ -616,8 +629,56 @@ class SubscriptionForm
             $plan->code,
             $plan->name,
             Helpers::getCurrencySymbol(),
-            round($plan->amount),
+            round((float) $plan->amount),
             __('app.units.days', ['count' => $plan->days]),
         );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function invoiceItems(Get $get): array
+    {
+        $items = $get('invoices');
+
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $normalized[] = \App\Support\Data::map($item);
+        }
+
+        return $normalized;
+    }
+
+    private static function stringState(Get $get, string $path): ?string
+    {
+        return \App\Support\Data::nullableString($get($path));
+    }
+
+    private static function intState(Get $get, string $path): ?int
+    {
+        $value = $get($path);
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    private static function floatState(Get $get, string $path): float
+    {
+        return \App\Support\Data::float($get($path));
+    }
+
+    private static function planFromState(Get $get): ?Plan
+    {
+        $planId = self::intState($get, 'plan_id');
+
+        return $planId !== null ? Plan::find($planId) : null;
     }
 }

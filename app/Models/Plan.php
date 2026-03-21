@@ -10,8 +10,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $code
+ * @property string|null $description
+ * @property int|null $service_id
+ * @property float|int|string|null $amount
+ * @property int|float|string|null $days
+ * @property Status|null $status
+ * @property-read Service|null $service
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Subscription> $subscriptions
+ */
 class Plan extends Model
 {
+    /** @use HasFactory<\Database\Factories\PlanFactory> */
     use CascadesSoftDeletes, HasFactory, SoftDeletes;
 
     /**
@@ -33,10 +46,14 @@ class Plan extends Model
         'status' => Status::class,
     ];
 
+    /** @var list<string> */
     protected $dates = ['deleted_at'];
 
     /**
      * Get the sevice for the plan.
+     */
+    /**
+     * @return BelongsTo<Service, $this>
      */
     public function service(): BelongsTo
     {
@@ -45,6 +62,9 @@ class Plan extends Model
 
     /**
      * Get the subscriptions for the plan.
+     */
+    /**
+     * @return HasMany<Subscription, $this>
      */
     public function subscriptions(): HasMany
     {

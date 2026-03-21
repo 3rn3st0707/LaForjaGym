@@ -13,7 +13,9 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Services\Api\QueryFilters;
 use App\Services\Subscriptions\SubscriptionRenewalService;
+use App\Support\AppConfig;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Data;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,13 +53,13 @@ class SubscriptionsController extends ApiController
 
         $data = $request->validated();
 
-        $timezone = config('app.timezone');
+        $timezone = AppConfig::timezone();
         $today = Carbon::today($timezone);
 
-        $plan = Plan::findOrFail((int) $data['plan_id']);
+        $plan = Plan::findOrFail(Data::int($data['plan_id'] ?? null));
 
-        $startDate = Carbon::parse($data['start_date'])->toDateString();
-        $endDate = $data['end_date'] ?? Helpers::calculateSubscriptionEndDate($startDate, (int) $plan->id);
+        $startDate = Carbon::parse(Data::string($data['start_date'] ?? null))->toDateString();
+        $endDate = Data::string($data['end_date'] ?? null) ?: Helpers::calculateSubscriptionEndDate($startDate, Data::int($plan->id));
         $endDate = Carbon::parse($endDate)->toDateString();
 
         $status = $data['status'] ?? match (true) {
@@ -79,21 +81,21 @@ class SubscriptionsController extends ApiController
         if (is_array($invoiceData)) {
             $fee = round((float) $plan->amount, 2);
 
-            $discountPct = max((int) ($invoiceData['discount'] ?? 0), 0);
-            $discountAmount = (float) ($invoiceData['discount_amount'] ?? 0);
+            $discountPct = max(Data::int($invoiceData['discount'] ?? 0), 0);
+            $discountAmount = Data::float($invoiceData['discount_amount'] ?? 0);
             $discountAmount = min(max($discountAmount, 0), $fee);
             if ($discountPct > 0 && $discountAmount <= 0) {
                 $discountAmount = (float) Helpers::getDiscountAmount($discountPct, $fee);
             }
 
-            $paymentMethod = $invoiceData['payment_method'] ?? null;
-            $paidAmount = max((float) ($invoiceData['paid_amount'] ?? 0), 0);
+            $paymentMethod = Data::nullableString($invoiceData['payment_method'] ?? null);
+            $paidAmount = max(Data::float($invoiceData['paid_amount'] ?? 0), 0);
             if (PaymentMethod::isOnline($paymentMethod)) {
                 $paidAmount = 0;
             }
 
-            $invoiceDate = Carbon::parse($invoiceData['date'] ?? $startDate)->toDateString();
-            $invoiceDueDate = Carbon::parse($invoiceData['due_date'] ?? $invoiceDate)->toDateString();
+            $invoiceDate = Carbon::parse(Data::string($invoiceData['date'] ?? $startDate))->toDateString();
+            $invoiceDueDate = Carbon::parse(Data::string($invoiceData['due_date'] ?? $invoiceDate))->toDateString();
 
             $subscription->invoices()->create([
                 'number' => $invoiceData['number'] ?? null,
@@ -175,7 +177,25 @@ class SubscriptionsController extends ApiController
     {
         $this->requirePermission($request, 'Update:Subscription');
 
-        $result = app(SubscriptionRenewalService::class)->renew($subscription, $request->validated());
+        /** @var array{
+         *   plan_id: int,
+         *   start_date: string,
+         *   end_date?: string|null,
+         *   invoice?: array{
+         *     number?: string|null,
+         *     date?: string|null,
+         *     due_date?: string|null,
+         *     payment_method?: string|null,
+         *     discount?: float|int|string|null,
+         *     discount_amount?: float|int|string|null,
+         *     discount_note?: string|null,
+         *     paid_amount?: float|int|string|null
+         *   }
+         * } $validated
+         */
+        $validated = $request->validated();
+
+        $result = app(SubscriptionRenewalService::class)->renew($subscription, $validated);
 
         $newSubscription = $result['subscription'];
         $invoice = $result['invoice'];

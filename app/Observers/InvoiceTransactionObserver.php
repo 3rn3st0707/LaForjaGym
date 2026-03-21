@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Contracts\SettingsRepository;
 use App\Jobs\SendInvoicePaymentReceiptEmail;
 use App\Models\InvoiceTransaction;
+use App\Support\Data;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -45,7 +46,11 @@ class InvoiceTransactionObserver
             return;
         }
 
-        $email = (string) ($invoiceTransaction->invoice?->subscription?->member?->email ?? '');
+        $invoice = $invoiceTransaction->invoice;
+
+        $email = $invoice->subscription && $invoice->subscription->member
+            ? (string) $invoice->subscription->member->email
+            : '';
 
         if (! filled($email)) {
             Log::info('Skipping payment receipt email: member email missing.', [
@@ -57,8 +62,8 @@ class InvoiceTransactionObserver
         }
 
         SendInvoicePaymentReceiptEmail::dispatch(
-            invoiceId: (int) $invoiceId,
-            invoiceTransactionId: (int) $invoiceTransaction->getKey(),
+            invoiceId: Data::int($invoiceId),
+            invoiceTransactionId: Data::int($invoiceTransaction->getKey()),
             toEmail: $email,
         )->afterCommit();
     }

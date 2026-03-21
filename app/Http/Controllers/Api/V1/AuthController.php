@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Models\User;
+use App\Support\Data;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -23,16 +24,16 @@ class AuthController extends ApiController
     public function login(LoginRequest $request): JsonResponse
     {
         $user = User::query()
-            ->where('email', (string) $request->string('email'))
+            ->where('email', $request->string('email')->toString())
             ->first();
 
-        if (! $user || ! Hash::check((string) $request->input('password'), (string) $user->password)) {
+        if (! $user || ! Hash::check(Data::string($request->input('password')), Data::string($user->password))) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
         }
 
-        $deviceName = (string) ($request->input('device_name') ?: ($request->userAgent() ?: 'api'));
+        $deviceName = Data::string($request->input('device_name')) ?: Data::string($request->userAgent(), 'api');
         $deviceName = mb_substr($deviceName, 0, 255);
 
         $token = $user->createToken($deviceName)->plainTextToken;
@@ -67,10 +68,8 @@ class AuthController extends ApiController
         /** @var User $user */
         $user = $request->user();
 
-        $token = $user->currentAccessToken();
-
-        if ($token) {
-            $token->delete();
+        if ($request->bearerToken() !== null) {
+            $user->currentAccessToken()->delete();
         } else {
             $user->tokens()->delete();
         }

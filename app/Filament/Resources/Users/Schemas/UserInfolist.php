@@ -24,7 +24,7 @@ class UserInfolist
             ->components([
                 Section::make()
                     ->heading(function (User $record): HtmlString {
-                        $status = $record->status;
+                        $status = $record->status ?? \App\Enums\Status::Inactive;
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex ml-2" :color="$color">
                                 {{ $label }}
@@ -40,7 +40,7 @@ class UserInfolist
                     ->schema([
                         ImageEntry::make('photo')
                             ->hiddenLabel()
-                            ->defaultImageUrl(fn (User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
+                            ->defaultImageUrl(fn (User $record): string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name)
                             ->size(180)
                             ->circular()
                             ->columnSpan(1),

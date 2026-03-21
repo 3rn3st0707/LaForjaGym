@@ -24,6 +24,12 @@ final class QueryFilters
      * This consolidates controller boilerplate while keeping query rules explicit
      * (see {@see \App\Services\Api\ResourceQueryRules}).
      */
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
     public static function applyIndexFilters(Builder $query, Request $request, string $resourceKey): Builder
     {
         self::validateIndexQueryParameters($request, $resourceKey);
@@ -105,7 +111,7 @@ final class QueryFilters
                         continue;
                     }
 
-                    $type = (string) ($rules[$key]['type'] ?? 'exact');
+                    $type = $rules[$key]['type'];
                     if (in_array($type, ['date_range', 'datetime_range'], true) && str_contains($value, '..') && self::parseRange($value) === null) {
                         $errors["filter.{$key}"][] = 'Range filters must use `from..to`.';
                     }
@@ -124,6 +130,9 @@ final class QueryFilters
     /**
      * Apply allowlisted filtering / includes / sorting using spatie/laravel-query-builder.
      *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
      * @param  list<string>  $allowedIncludes
      * @param  array<string, array{type: string, column: string}>  $filterRules
      * @param  list<string>  $allowedSorts
@@ -139,8 +148,8 @@ final class QueryFilters
         /** @var list<AllowedFilter> $allowedFilters */
         $allowedFilters = [];
         foreach ($filterRules as $key => $rule) {
-            $type = (string) ($rule['type'] ?? 'exact');
-            $column = (string) ($rule['column'] ?? $key);
+            $type = $rule['type'];
+            $column = $rule['column'];
 
             $allowedFilters[] = match ($type) {
                 'partial' => AllowedFilter::partial($key, $column),
@@ -194,7 +203,11 @@ final class QueryFilters
     /**
      * Apply a simple multi-column "contains" search using `?q=...`.
      *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
      * @param  list<string>  $columns
+     * @return Builder<TModel>
      */
     public static function applySearch(Builder $query, ?string $q, array $columns): Builder
     {
@@ -214,6 +227,12 @@ final class QueryFilters
     /**
      * Apply a basic equality filter for `?status=...`.
      */
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
     public static function applyStatus(Builder $query, ?string $status, string $column = 'status'): Builder
     {
         $status = trim((string) $status);
@@ -227,6 +246,12 @@ final class QueryFilters
 
     /**
      * Apply soft-delete visibility filter using `?trashed=with|only`.
+     */
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
     public static function applyTrashed(Builder $query, ?string $value): Builder
     {
@@ -242,13 +267,24 @@ final class QueryFilters
             return $query;
         }
 
+        $deletedAtColumn = method_exists($model, 'getQualifiedDeletedAtColumn')
+            ? $model->getQualifiedDeletedAtColumn()
+            : $model->getTable().'.deleted_at';
+
         return match ($value) {
-            'with' => $query->withTrashed(),
-            'only' => $query->onlyTrashed(),
+            'with' => $query->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class),
+            'only' => $query
+                ->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class)
+                ->whereNotNull($deletedAtColumn),
             default => $query,
         };
     }
 
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     */
     private static function applyRange(Builder $query, string $column, string $value): void
     {
         $range = self::parseRange($value);

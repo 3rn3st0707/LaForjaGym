@@ -68,8 +68,9 @@ class FollowUpTable
                 ->placeholder(__('app.placeholders.na'))
                 ->limit(40)
                 ->tooltip(function (TextColumn $column): ?string {
-                    $state = $column->getState();
-                    if (strlen($state) <= $column->getCharacterLimit()) {
+                    $state = \App\Support\Data::nullableString($column->getState());
+
+                    if ($state === null || strlen($state) <= $column->getCharacterLimit()) {
                         return null;
                     }
 
@@ -96,9 +97,9 @@ class FollowUpTable
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $records = __('app.resources.follow_ups.plural');
+                $records = (string) __('app.resources.follow_ups.plural');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $from && ! $to) {
                     return $status
@@ -114,7 +115,7 @@ class FollowUpTable
                     ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
                     : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
-            ->emptyStateDescription(function ($livewire): ?string {
+            ->emptyStateDescription(function ($livewire): string {
                 // If no enquiries exist
                 if (! Enquiry::exists()) {
                     return __('app.empty.create_to_get_started', ['resource' => __('app.resources.enquiries.singular')]);
@@ -122,10 +123,10 @@ class FollowUpTable
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $records = __('app.resources.follow_ups.plural');
-                $record = __('app.resources.follow_ups.singular');
+                $records = (string) __('app.resources.follow_ups.plural');
+                $record = (string) __('app.resources.follow_ups.singular');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $fromRaw && ! $toRaw) {
                     return $status
@@ -133,8 +134,8 @@ class FollowUpTable
                         : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : (string) __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : (string) __('app.common.today');
 
                 if ($tab === 'all') {
                     return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
@@ -171,6 +172,8 @@ class FollowUpTable
 
     /**
      * Get table filter definitions.
+     *
+     * @return array<int, Filter|TrashedFilter>
      */
     public static function getTableFilters(): array
     {
@@ -197,6 +200,8 @@ class FollowUpTable
 
     /**
      * Get table action definitions.
+     *
+     * @return array<int, ActionGroup>
      */
     public static function getTableActions(): array
     {

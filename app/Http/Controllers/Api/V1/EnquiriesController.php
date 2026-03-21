@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\EnquiryUpdateRequest;
 use App\Http\Resources\V1\EnquiryResource;
 use App\Models\Enquiry;
 use App\Services\Api\QueryFilters;
+use App\Support\Data;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,12 +43,12 @@ class EnquiriesController extends ApiController
         $this->requirePermission($request, 'Create:Enquiry');
 
         $data = $request->validated();
-        $data['user_id'] = $request->user()->getAuthIdentifier();
+        $data['user_id'] = Data::int($this->currentUser($request)->getAuthIdentifier());
 
         $followUp = $data['follow_up'] ?? null;
         unset($data['follow_up']);
 
-        $data['date'] = $data['date'] ?? now()->timezone(config('app.timezone'))->toDateString();
+        $data['date'] = $data['date'] ?? now()->timezone(\App\Support\AppConfig::timezone())->toDateString();
 
         $enquiry = Enquiry::create($data);
 

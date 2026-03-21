@@ -3,12 +3,17 @@
 namespace App\Filament\Resources\Subscriptions\Pages;
 
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
+use App\Models\Member;
+use App\Models\Subscription;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
+/**
+ * @property-read Subscription $record
+ */
 class EditSubscription extends EditRecord
 {
     protected static string $resource = SubscriptionResource::class;
@@ -30,10 +35,13 @@ class EditSubscription extends EditRecord
 
     public function getBreadcrumbs(): array
     {
+        $member = $this->record->member;
+        assert($member instanceof Member);
+
         return [
             __('app.navigation.groups.memberships'),
             SubscriptionResource::getUrl('index') => SubscriptionResource::getNavigationLabel(),
-            $this->record->member->name,
+            $member->name,
         ];
     }
 }

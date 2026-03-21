@@ -3,10 +3,14 @@
 namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
+use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
+/**
+ * @property-read User $record
+ */
 class ViewUser extends ViewRecord
 {
     protected static string $resource = UserResource::class;

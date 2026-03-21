@@ -25,15 +25,15 @@ class MarkInvoiceOverdue extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        if (!$this->option('mark-overdue')) {
+        if (! $this->option('mark-overdue')) {
             $this->info('No operation selected.');
 
             return self::SUCCESS;
         }
 
-        $today = Carbon::today(config('app.timezone'));
+        $today = Carbon::today(\App\Support\AppConfig::timezone());
 
         $updatedCount = Invoice::query()
             ->whereIn('status', ['issued', 'partial'])

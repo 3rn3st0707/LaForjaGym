@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Contracts\SettingsRepository;
 use App\Helpers\Helpers;
 use App\Models\Expense;
 use App\Models\Invoice;
@@ -47,8 +48,10 @@ class DashboardDemoSeeder extends Seeder
         $plans = Plan::query()->get();
         $members = Member::query()->inRandomOrder()->limit(200)->get();
 
-        $this->seedSubscriptionsForMembers($members, $plans);
-        $this->seedInvoicesForSubscriptions($this->subscriptionsNeedingInvoices(), $plans);
+        $this->withoutInvoiceEmails(function () use ($members, $plans): void {
+            $this->seedSubscriptionsForMembers($members, $plans);
+            $this->seedInvoicesForSubscriptions($this->subscriptionsNeedingInvoices(), $plans);
+        });
 
         $this->ensureMinimumCount(Expense::class, 150, fn (int $count): Collection => Expense::factory()->count($count)->create());
     }
@@ -371,5 +374,29 @@ class DashboardDemoSeeder extends Seeder
         }
 
         $invoice->syncFromTransactions();
+    }
+
+    /**
+     * Disable invoice-related email notifications while demo data is generated.
+     */
+    private function withoutInvoiceEmails(callable $callback): void
+    {
+        $settingsRepository = app(SettingsRepository::class);
+        $settings = $settingsRepository->get();
+
+        $originalEmailSettings = data_get($settings, 'notifications.email', []);
+
+        data_set($settings, 'notifications.email.enabled', false);
+        data_set($settings, 'notifications.email.auto_send_invoice_issued', false);
+        data_set($settings, 'notifications.email.auto_send_payment_receipt', false);
+
+        $settingsRepository->put($settings);
+
+        try {
+            $callback();
+        } finally {
+            data_set($settings, 'notifications.email', is_array($originalEmailSettings) ? $originalEmailSettings : []);
+            $settingsRepository->put($settings);
+        }
     }
 }

@@ -22,7 +22,7 @@ class LocaleSwitcher extends Component
 
     public function mount(): void
     {
-        $this->locale = (string) app()->getLocale();
+        $this->locale = \App\Support\AppConfig::string('app.locale', 'en');
     }
 
     /**
@@ -30,14 +30,9 @@ class LocaleSwitcher extends Component
      */
     public function getOptionsProperty(): array
     {
-        $supported = config('app.supported_locales', []);
-        if (! is_array($supported) || $supported === []) {
-            $supported = [(string) config('app.locale', 'en')];
-        }
-
         $options = [];
 
-        foreach (array_values(array_filter(array_map('strval', $supported))) as $locale) {
+        foreach (\App\Support\AppConfig::supportedLocales() as $locale) {
             $options[$locale] = [
                 'label' => (string) __("app.locales.{$locale}"),
                 'flag' => self::LOCALE_FLAGS[$locale] ?? '🏳️',
@@ -54,7 +49,7 @@ class LocaleSwitcher extends Component
 
     public function setLocale(string $locale): mixed
     {
-        $options = $this->options;
+        $options = $this->getOptionsProperty();
 
         if (! array_key_exists($locale, $options)) {
             return null;
@@ -65,6 +60,7 @@ class LocaleSwitcher extends Component
 
         $settings = $repository->get();
         data_set($settings, 'general.locale', $locale);
+        /** @var array<string, mixed> $settings */
         $repository->put($settings);
 
         $this->locale = $locale;

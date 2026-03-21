@@ -22,9 +22,6 @@ class InvoiceIssuedMail extends Mailable
 
     /**
      * @param  non-empty-string  $gymName
-     * @param  string|null  $gymEmail
-     * @param  string|null  $gymContact
-     * @param  string|null  $memberName
      */
     public function __construct(
         public readonly Invoice $invoice,

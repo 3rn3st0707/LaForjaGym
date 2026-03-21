@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Service extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceFactory> */
     use CascadesSoftDeletes, HasFactory, SoftDeletes;
 
     /**
@@ -22,10 +23,14 @@ class Service extends Model
         'description',
     ];
 
+    /** @var list<string> */
     protected $dates = ['deleted_at'];
 
     /**
      * Get the plans for the service.
+     */
+    /**
+     * @return HasMany<Plan, $this>
      */
     public function plans(): HasMany
     {

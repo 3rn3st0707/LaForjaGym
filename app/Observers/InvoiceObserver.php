@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Contracts\SettingsRepository;
 use App\Jobs\SendInvoiceIssuedEmail;
 use App\Models\Invoice;
+use App\Support\Data;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,7 +33,9 @@ class InvoiceObserver
 
         $invoice->loadMissing('subscription.member');
 
-        $email = (string) ($invoice->subscription?->member?->email ?? '');
+        $email = $invoice->subscription && $invoice->subscription->member
+            ? (string) $invoice->subscription->member->email
+            : '';
 
         if (! filled($email)) {
             Log::info('Skipping invoice issued email: member email missing.', [
@@ -44,7 +47,7 @@ class InvoiceObserver
         }
 
         SendInvoiceIssuedEmail::dispatch(
-            invoiceId: (int) $invoice->getKey(),
+            invoiceId: Data::int($invoice->getKey()),
             toEmail: $email,
         )->afterCommit();
     }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Enquiries\RelationManagers;
 
 use App\Filament\Resources\FollowUps\FollowUpResource;
 use App\Filament\Resources\FollowUps\Tables\FollowUpTable;
+use App\Models\Enquiry;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
@@ -51,7 +52,11 @@ class FollowUpsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make('create')
                     ->icon('heroicon-m-plus')
-                    ->visible(fn () => $this->getOwnerRecord()->followUps()->exists())
+                    ->visible(function (): bool {
+                        $ownerRecord = $this->getOwnerRecord();
+
+                        return $ownerRecord instanceof Enquiry && $ownerRecord->followUps()->exists();
+                    })
                     ->createAnother(false)
                     ->modalHeading(__('app.actions.new_follow_up'))
                     ->modalWidth('sm'),

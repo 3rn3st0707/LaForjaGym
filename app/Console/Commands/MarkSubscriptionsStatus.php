@@ -30,9 +30,9 @@ class MarkSubscriptionsStatus extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        $timezone = config('app.timezone');
+        $timezone = \App\Support\AppConfig::timezone();
         $today = Carbon::today($timezone);
         $expiringDays = Helpers::getSubscriptionExpiringDays();
         $expiringThreshold = $today->copy()->addDays($expiringDays);
@@ -108,7 +108,7 @@ class MarkSubscriptionsStatus extends Command
         if (empty($summary)) {
             $this->info('No subscription statuses needed updating.');
 
-            return;
+            return self::SUCCESS;
         }
 
         foreach ($summary as $line) {
@@ -123,5 +123,7 @@ class MarkSubscriptionsStatus extends Command
                 ->info()
                 ->sendToDatabase($admin);
         }
+
+        return self::SUCCESS;
     }
 }

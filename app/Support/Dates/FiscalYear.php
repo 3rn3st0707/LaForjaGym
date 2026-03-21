@@ -2,6 +2,7 @@
 
 namespace App\Support\Dates;
 
+use App\Support\Data;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
@@ -21,9 +22,9 @@ final class FiscalYear
         $tpl = self::parseTemplates($generalSettings);
 
         $year = $date->year;
-        $start = Carbon::create($year, $tpl['start']->month, $tpl['start']->day);
+        $start = Carbon::parse(sprintf('%04d-%02d-%02d', $year, $tpl['start']->month, $tpl['start']->day))->startOfDay();
         $endYear = $tpl['end']->lessThan($tpl['start']) ? $year + 1 : $year;
-        $end = Carbon::create($endYear, $tpl['end']->month, $tpl['end']->day);
+        $end = Carbon::parse(sprintf('%04d-%02d-%02d', $endYear, $tpl['end']->month, $tpl['end']->day))->startOfDay();
 
         if ($date->lt($start)) {
             $start = $start->subYear();
@@ -52,7 +53,7 @@ final class FiscalYear
 
         try {
             if (filled($value)) {
-                $parsed = Carbon::parse((string) $value);
+                $parsed = Carbon::parse(Data::string($value));
                 $month = $parsed->month;
                 $day = $parsed->day;
             }
@@ -60,6 +61,6 @@ final class FiscalYear
             // Fall back to template.
         }
 
-        return Carbon::create(2000, $month, $day);
+        return Carbon::parse(sprintf('2000-%02d-%02d', $month, $day))->startOfDay();
     }
 }

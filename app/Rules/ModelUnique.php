@@ -23,7 +23,7 @@ final class ModelUnique implements ValidationRule
     ) {}
 
     /**
-     * @param  Closure(string): void  $fail
+     * @param  Closure(string, string|null=): \Illuminate\Translation\PotentiallyTranslatedString  $fail
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

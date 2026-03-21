@@ -30,10 +30,10 @@ final readonly class AnalyticsDateRange
     public static function fromFilters(?array $filters, ?string $timezone = null): self
     {
         $filters ??= [];
-        $timezone ??= config('app.timezone');
+        $timezone ??= \App\Support\AppConfig::timezone();
         $today = CarbonImmutable::today($timezone);
 
-        $period = (string) ($filters['period'] ?? '7days');
+        $period = is_string($filters['period'] ?? null) ? $filters['period'] : '7days';
         $startDate = $filters['startDate'] ?? null;
         $endDate = $filters['endDate'] ?? null;
 

@@ -45,9 +45,9 @@ class EnquiryTable
             ->emptyStateHeading(function ($livewire): string {
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $records = __('app.resources.enquiries.plural');
+                $records = (string) __('app.resources.enquiries.plural');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $from && ! $to) {
                     return $status
@@ -63,13 +63,13 @@ class EnquiryTable
                     ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
                     : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
-            ->emptyStateDescription(function ($livewire): ?string {
+            ->emptyStateDescription(function ($livewire): string {
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $records = __('app.resources.enquiries.plural');
-                $record = __('app.resources.enquiries.singular');
+                $records = (string) __('app.resources.enquiries.plural');
+                $record = (string) __('app.resources.enquiries.singular');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $fromRaw && ! $toRaw) {
                     return $status
@@ -77,8 +77,8 @@ class EnquiryTable
                         : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : (string) __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : (string) __('app.common.today');
 
                 if ($tab === 'all') {
                     return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
@@ -121,14 +121,14 @@ class EnquiryTable
                         Action::make('heading_actions')
                             ->label(__('app.fields.status'))
                             ->disabled()
-                            ->visible(fn ($record) => in_array($record->status->value, ['lead']))
+                            ->visible(fn ($record): bool => in_array($record->status?->value, ['lead'], true))
                             ->color('gray'),
                         Action::make('convert_to_member')
                             ->label(__('app.actions.convert_to_member'))
                             ->icon('heroicon-m-arrows-right-left')
                             ->color('success')
                             ->requiresConfirmation()
-                            ->visible(fn (Enquiry $record) => $record->status->value === 'lead')
+                            ->visible(fn (Enquiry $record): bool => $record->status?->value === 'lead')
                             ->url(fn (Enquiry $record) => MemberResource::getUrl(
                                 'create',
                                 ['enquiry_id' => $record->id],
@@ -147,7 +147,7 @@ class EnquiryTable
                                     ->iconColor('danger')
                                     ->send();
                             }))
-                            ->visible(fn ($record) => $record->status->value === 'lead'),
+                            ->visible(fn ($record): bool => $record->status?->value === 'lead'),
                     ])->dropdown(false),
                     ActionGroup::make([
                         Action::make('heading_actions')

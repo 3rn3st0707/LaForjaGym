@@ -48,21 +48,11 @@ class ExpenseResource extends Resource
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         /** @var Expense $record */
-        $details = [];
-
-        if ($record->date) {
-            $details[__('app.fields.date')] = $record->date->toDateString();
-        }
-
-        if ($record->status) {
-            $details[__('app.fields.status')] = GlobalSearchBadge::status($record->status);
-        }
-
-        if (! is_null($record->amount)) {
-            $details[__('app.fields.amount')] = Helpers::formatCurrency((float) $record->amount);
-        }
-
-        return $details;
+        return [
+            __('app.fields.date') => $record->date->toDateString(),
+            __('app.fields.status') => GlobalSearchBadge::status($record->status),
+            __('app.fields.amount') => Helpers::formatCurrency((float) $record->amount),
+        ];
     }
 
     public static function form(Schema $schema): Schema

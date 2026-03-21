@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Contracts\SettingsRepository;
+use App\Support\AppConfig;
+use App\Support\Data;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -15,13 +17,8 @@ class SetAppLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $supportedLocales = config('app.supported_locales', []);
-        if (! is_array($supportedLocales) || $supportedLocales === []) {
-            $supportedLocales = [config('app.locale', 'en')];
-        }
-
-        $supportedLocales = array_values(array_filter(array_map('strval', $supportedLocales)));
-        $fallbackLocale = (string) config('app.fallback_locale', 'en');
+        $supportedLocales = AppConfig::supportedLocales();
+        $fallbackLocale = AppConfig::string('app.fallback_locale', 'en');
 
         $queryLocale = $request->query('locale');
         $queryLocale = is_string($queryLocale) ? trim($queryLocale) : null;
@@ -38,10 +35,12 @@ class SetAppLocale
         $headerLocale = $request->getPreferredLanguage($supportedLocales);
         $headerLocale = is_string($headerLocale) ? trim($headerLocale) : null;
 
-        $locale = $queryLocale ?: ($settingsLocale ?: ($headerLocale ?: (string) config('app.locale', 'en')));
+        $locale = $queryLocale ?: ($settingsLocale ?: ($headerLocale ?: AppConfig::string('app.locale', 'en')));
 
         if (! in_array($locale, $supportedLocales, true)) {
-            $locale = in_array($fallbackLocale, $supportedLocales, true) ? $fallbackLocale : $supportedLocales[0];
+            $locale = in_array($fallbackLocale, $supportedLocales, true)
+                ? $fallbackLocale
+                : Data::string($supportedLocales[0] ?? 'en', 'en');
         }
 
         app()->setLocale($locale);

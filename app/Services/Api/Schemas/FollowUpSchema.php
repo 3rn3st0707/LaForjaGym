@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\Enquiry;
 use App\Models\FollowUp;
 use App\Models\User;
@@ -103,7 +104,7 @@ final class FollowUpSchema
             'schedule_date' => $followUp->schedule_date?->toDateString(),
             'method' => $followUp->method ? (string) $followUp->method : null,
             'outcome' => $followUp->outcome ? (string) $followUp->outcome : null,
-            'status' => $followUp->status?->value ?? (is_string($followUp->status) ? $followUp->status : null),
+            'status' => Status::valueOf($followUp->status),
             'created_at' => $followUp->created_at?->toISOString(),
             'updated_at' => $followUp->updated_at?->toISOString(),
             'deleted_at' => $followUp->deleted_at?->toISOString(),

@@ -6,6 +6,7 @@ use App\Http\Requests\Api\V1\EnquiryFollowUpStoreRequest;
 use App\Http\Resources\V1\FollowUpResource;
 use App\Models\Enquiry;
 use App\Services\Api\QueryFilters;
+use App\Support\Data;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -40,7 +41,7 @@ class EnquiryFollowUpsController extends ApiController
         $data = $request->validated();
 
         $followUp = $enquiry->followUps()->create([
-            'user_id' => $request->user()->getAuthIdentifier(),
+            'user_id' => Data::int($this->currentUser($request)->getAuthIdentifier()),
             'schedule_date' => $data['schedule_date'],
             'method' => $data['method'],
             'outcome' => $data['outcome'] ?? null,

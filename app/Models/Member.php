@@ -10,8 +10,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string|null $photo
+ * @property string $code
+ * @property string $name
+ * @property string|null $email
+ * @property string|null $contact
+ * @property string|null $emergency_contact
+ * @property string|null $health_issue
+ * @property string|null $gender
+ * @property \Illuminate\Support\Carbon|null $dob
+ * @property string|null $address
+ * @property string|null $country
+ * @property string|null $state
+ * @property string|null $city
+ * @property string|null $pincode
+ * @property string|null $source
+ * @property string|null $goal
+ * @property Status|null $status
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Subscription> $subscriptions
+ */
 class Member extends Model
 {
+    /** @use HasFactory<\Database\Factories\MemberFactory> */
     use CascadesSoftDeletes, HasFactory, SoftDeletes;
 
     /**
@@ -39,18 +61,13 @@ class Member extends Model
         'status',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = ['dob' => 'date', 'status' => Status::class];
 
     /**
      * The attributes that should be mutated to dates.
      * (SoftDeletes already adds deleted_at rollover.)
      *
-     * @var array
+     * @var list<string>
      */
     protected $dates = [
         'dob',
@@ -59,6 +76,9 @@ class Member extends Model
 
     /**
      * Get the subscriptions for the member.
+     */
+    /**
+     * @return HasMany<Subscription, $this>
      */
     public function subscriptions(): HasMany
     {

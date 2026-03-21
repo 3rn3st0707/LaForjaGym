@@ -48,7 +48,7 @@ class InvoiceForm
                                     ->default(fn (Get $get) => Helpers::generateLastNumber(
                                         'invoice',
                                         Invoice::class,
-                                        $get('date')
+                                        self::stringState($get, 'date')
                                     )),
                                 Select::make('subscription_id')
                                     ->label(__('app.fields.subscription'))
@@ -72,8 +72,8 @@ class InvoiceForm
                                             if ($sub) {
                                                 $fee = (float) ($sub->plan->amount ?? 0);
                                                 $taxRate = Helpers::getTaxRate() ?: 0;
-                                                $discountAmount = (float) ($get('discount_amount') ?: 0);
-                                                $paid = (float) ($get('paid_amount') ?: 0);
+                                                $discountAmount = self::floatState($get, 'discount_amount');
+                                                $paid = self::floatState($get, 'paid_amount');
 
                                                 $summary = InvoiceCalculator::summary(
                                                     $fee,
@@ -116,10 +116,10 @@ class InvoiceForm
                                     ->placeholder(__('app.placeholders.select_discount'))
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set) {
-                                            $fee = $get('subscription_fee') ?: 0;
-                                            $discountPct = (int) $get('discount');
+                                            $fee = self::floatState($get, 'subscription_fee');
+                                            $discountPct = self::intState($get, 'discount');
                                             $discountAmount = Helpers::getDiscountAmount($discountPct, $fee);
-                                            $paid = (float) ($get('paid_amount') ?: 0);
+                                            $paid = self::floatState($get, 'paid_amount');
                                             $taxRate = Helpers::getTaxRate() ?: 0;
 
                                             $summary = InvoiceCalculator::summary(
@@ -142,15 +142,15 @@ class InvoiceForm
                                     ->debounce(300)
                                     ->default(0)
                                     ->prefix(Helpers::getCurrencySymbol())
-                                    ->maxValue(fn (Get $get): float => $get('subscription_fee') ?: 0)
+                                    ->maxValue(fn (Get $get): float => self::floatState($get, 'subscription_fee'))
                                     ->afterStateUpdated(
                                         function (Get $get, Set $set, $livewire, TextInput $component) {
                                             $livewire->validateOnly($component->getStatePath());
 
-                                            $fee = $get('subscription_fee') ?: 0;
-                                            $entered = $get('discount_amount') ?: 0;
+                                            $fee = self::floatState($get, 'subscription_fee');
+                                            $entered = self::floatState($get, 'discount_amount');
                                             $clamped = min(max($entered, 0), $fee);
-                                            $paid = (float) ($get('paid_amount') ?: 0);
+                                            $paid = self::floatState($get, 'paid_amount');
                                             $taxRate = Helpers::getTaxRate() ?: 0;
 
                                             $summary = InvoiceCalculator::summary(
@@ -221,14 +221,29 @@ class InvoiceForm
      */
     private static function formatSubscriptionOptionLabel(Subscription $subscription): string
     {
-        $memberCode = $subscription->member?->code ?? '—';
-        $memberName = $subscription->member?->name ?? '—';
-        $planCode = $subscription->plan?->code ?? '—';
-        $planName = $subscription->plan?->name ?? '—';
+        $memberCode = $subscription->member->code ?? '—';
+        $memberName = $subscription->member->name ?? '—';
+        $planCode = $subscription->plan->code ?? '—';
+        $planName = $subscription->plan->name ?? '—';
         $start = $subscription->start_date?->format('d-m-Y') ?? '—';
         $end = $subscription->end_date?->format('d-m-Y') ?? '—';
         $status = $subscription->status?->getLabel() ?? '—';
 
         return "#{$subscription->id} — {$memberCode} {$memberName} • {$planCode} {$planName} • {$start} → {$end} • {$status}";
+    }
+
+    private static function stringState(Get $get, string $path): ?string
+    {
+        return \App\Support\Data::nullableString($get($path));
+    }
+
+    private static function intState(Get $get, string $path): int
+    {
+        return \App\Support\Data::int($get($path));
+    }
+
+    private static function floatState(Get $get, string $path): float
+    {
+        return \App\Support\Data::float($get($path));
     }
 }

@@ -69,7 +69,7 @@ class ExpenseForm
                                     ->columnSpan(2),
                                 DatePicker::make('date')
                                     ->label(__('app.fields.date'))
-                                    ->default(fn (): string => now()->timezone(config('app.timezone'))->toDateString())
+                                    ->default(fn (): string => now()->timezone(\App\Support\AppConfig::timezone())->toDateString())
                                     ->required()
                                     ->columnSpan(2),
                                 DatePicker::make('due_date')
@@ -88,7 +88,7 @@ class ExpenseForm
                                     ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
                                         if ($state === Status::Paid->value) {
                                             if (blank($get('paid_at'))) {
-                                                $set('paid_at', now()->timezone(config('app.timezone'))->format('Y-m-d H:i:s'));
+                                                $set('paid_at', now()->timezone(\App\Support\AppConfig::timezone())->format('Y-m-d H:i:s'));
                                             }
 
                                             return;
@@ -101,7 +101,7 @@ class ExpenseForm
                                 DateTimePicker::make('paid_at')
                                     ->label(__('app.fields.paid_at'))
                                     ->seconds(false)
-                                    ->timezone(config('app.timezone'))
+                                    ->timezone(\App\Support\AppConfig::timezone())
                                     ->visible(fn (Get $get): bool => $get('status') === Status::Paid->value)
                                     ->required(fn (Get $get): bool => $get('status') === Status::Paid->value)
                                     ->columnSpan(2),

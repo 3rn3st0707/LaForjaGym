@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Livewire\Component;
 
 class MemberForm
 {
@@ -178,7 +179,7 @@ class MemberForm
                             ->deletable(false)
                             ->extraAttributes(['class' => 'rmv_rept-space'])
                             ->columns(3)
-                            ->schema(fn (HasSchemas $livewire): array => SubscriptionForm::configure(Schema::make($livewire))
+                            ->schema(fn (HasSchemas&Component $livewire): array => SubscriptionForm::configure(Schema::make($livewire))
                                 ->getComponents(withActions: false)),
                     ]),
             ]);

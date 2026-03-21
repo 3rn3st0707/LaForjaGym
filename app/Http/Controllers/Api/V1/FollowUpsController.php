@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\FollowUpUpdateRequest;
 use App\Http\Resources\V1\FollowUpResource;
 use App\Models\FollowUp;
 use App\Services\Api\QueryFilters;
+use App\Support\Data;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,7 +43,7 @@ class FollowUpsController extends ApiController
         $this->requirePermission($request, 'Create:FollowUp');
 
         $data = $request->validated();
-        $data['user_id'] = $request->user()->getAuthIdentifier();
+        $data['user_id'] = Data::int($this->currentUser($request)->getAuthIdentifier());
 
         $followUp = FollowUp::create($data);
 

@@ -1,5 +1,8 @@
 <?php
 
+use App\Contracts\SettingsRepository;
+use App\Jobs\SendInvoiceIssuedEmail;
+use App\Jobs\SendInvoicePaymentReceiptEmail;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\InvoiceTransaction;
@@ -9,6 +12,7 @@ use App\Models\Subscription;
 use Database\Seeders\DashboardDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -61,4 +65,22 @@ test('dashboard demo seeder avoids invoice number collisions with trashed invoic
     $invoiceA = Invoice::query()->where('subscription_id', $subscriptionA->id)->firstOrFail();
 
     expect((string) $invoiceA->number)->not->toBe('GY-1');
+});
+
+test('dashboard demo seeder does not queue invoice emails', function (): void {
+    Queue::fake();
+
+    $settingsRepository = app(SettingsRepository::class);
+    $settings = $settingsRepository->get();
+
+    data_set($settings, 'notifications.email.enabled', true);
+    data_set($settings, 'notifications.email.auto_send_invoice_issued', true);
+    data_set($settings, 'notifications.email.auto_send_payment_receipt', true);
+
+    $settingsRepository->put($settings);
+
+    $this->seed(DashboardDemoSeeder::class);
+
+    Queue::assertNotPushed(SendInvoiceIssuedEmail::class);
+    Queue::assertNotPushed(SendInvoicePaymentReceiptEmail::class);
 });

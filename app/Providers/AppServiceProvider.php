@@ -10,6 +10,7 @@ use App\Observers\InvoiceObserver;
 use App\Observers\InvoiceTransactionObserver;
 use App\Services\JsonSequenceRepository;
 use App\Services\JsonSettingsRepository;
+use App\Support\Data;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -144,25 +145,17 @@ class AppServiceProvider extends ServiceProvider
 
         $config = \Dedoc\Scramble\Scramble::configure();
 
-        if (method_exists($config, 'routes')) {
-            $config->routes(static function (\Illuminate\Routing\Route $route): bool {
-                return str_starts_with($route->uri, 'api/v1/');
-            });
-        }
+        $config->routes(static function (\Illuminate\Routing\Route $route): bool {
+            return str_starts_with($route->uri, 'api/v1/');
+        });
 
-        if (method_exists($config, 'withOperationTransformers')) {
-            $config->withOperationTransformers([
-                \App\Services\Api\Docs\AddIndexQueryParametersTransformer::class,
-            ]);
-        }
+        $config->withOperationTransformers([
+            \App\Services\Api\Docs\AddIndexQueryParametersTransformer::class,
+        ]);
 
-        if (method_exists($config, 'withDocumentTransformers') && class_exists(\Dedoc\Scramble\Support\Generator\SecurityScheme::class)) {
+        if (class_exists(\Dedoc\Scramble\Support\Generator\SecurityScheme::class)) {
             $config->withDocumentTransformers(static function (mixed $openApi): void {
                 if (! is_object($openApi) || ! method_exists($openApi, 'secure')) {
-                    return;
-                }
-
-                if (! method_exists(\Dedoc\Scramble\Support\Generator\SecurityScheme::class, 'http')) {
                     return;
                 }
 
@@ -182,7 +175,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request): Limit {
             $key = $request->user()?->getAuthIdentifier() ?? $request->ip();
 
-            return Limit::perMinute(60)->by((string) $key);
+            return Limit::perMinute(60)->by(Data::string($key));
         });
 
         RateLimiter::for('api-login', function (Request $request): Limit {
@@ -204,10 +197,26 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureDeletionPrevention(): void
     {
-        $map = config('prevent-deletion', []);
+        $map = [];
+
+        foreach ((array) config('prevent-deletion', []) as $class => $relations) {
+            if (! is_string($class) || ! is_array($relations)) {
+                continue;
+            }
+
+            $map[$class] = array_values(array_filter(array_map(
+                static fn (mixed $relation): string => Data::string($relation),
+                $relations,
+            )));
+        }
+
         DeleteAction::configureUsing(function (DeleteAction $action) use ($map): DeleteAction {
             return $action
                 ->requiresConfirmation(function (Action $action, $record) use ($map) {
+                    if (! is_object($record)) {
+                        return $action;
+                    }
+
                     $class = get_class($record);
                     $action->modalIcon('heroicon-o-trash');
                     if (isset($map[$class])) {
@@ -215,7 +224,7 @@ class AppServiceProvider extends ServiceProvider
                             if ($record->$relation()->exists()) {
                                 $count = $record->$relation()->count();
                                 $moduleName = class_basename($record);
-                                $label = Str::kebab($relation);
+                                $label = Str::kebab(Data::string($relation));
                                 $action
                                     ->modalIcon('heroicon-o-x-mark')
                                     ->modalHeading(__('app.deletion_prevention.cannot_delete_title', ['module' => $moduleName]))
@@ -235,6 +244,10 @@ class AppServiceProvider extends ServiceProvider
             return $action
                 ->requiresConfirmation(function (DeleteBulkAction $action, Collection $records) use ($map) {
                     foreach ($records as $record) {
+                        if (! is_object($record)) {
+                            continue;
+                        }
+
                         $class = get_class($record);
                         $action->modalIcon('heroicon-o-trash');
                         if (isset($map[$class])) {
@@ -242,7 +255,7 @@ class AppServiceProvider extends ServiceProvider
                                 if ($record->$relation()->exists()) {
                                     $count = $record->$relation()->count();
                                     $moduleName = Str::pluralStudly(class_basename($record));
-                                    $label = Str::kebab($relation);
+                                    $label = Str::kebab(Data::string($relation));
                                     $action
                                         ->modalIcon('heroicon-o-x-mark')
                                         ->modalHeading(__('app.deletion_prevention.cannot_delete_title', ['module' => $moduleName]))

@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Http\Resources\V1\InvoiceResource;
 use App\Models\Member;
 use App\Models\Plan;
@@ -117,7 +118,7 @@ final class SubscriptionSchema
             'plan_id' => (int) $subscription->plan_id,
             'start_date' => $subscription->start_date?->toDateString(),
             'end_date' => $subscription->end_date?->toDateString(),
-            'status' => $subscription->status?->value ?? (is_string($subscription->status) ? $subscription->status : null),
+            'status' => Status::valueOf($subscription->status),
             'created_at' => $subscription->created_at?->toISOString(),
             'updated_at' => $subscription->updated_at?->toISOString(),
             'deleted_at' => $subscription->deleted_at?->toISOString(),

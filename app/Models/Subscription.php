@@ -9,8 +9,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int|null $renewed_from_subscription_id
+ * @property int|null $member_id
+ * @property int|null $plan_id
+ * @property \Illuminate\Support\Carbon|null $start_date
+ * @property \Illuminate\Support\Carbon|null $end_date
+ * @property Status|null $status
+ * @property-read Member|null $member
+ * @property-read Plan|null $plan
+ * @property-read Subscription|null $renewedFrom
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Subscription> $renewals
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Invoice> $invoices
+ */
 class Subscription extends Model
 {
+    /** @use HasFactory<\Database\Factories\SubscriptionFactory> */
     use HasFactory, SoftDeletes;
 
     /**
@@ -29,14 +44,18 @@ class Subscription extends Model
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date'   => 'date',
-        'status'     => Status::class,
+        'end_date' => 'date',
+        'status' => Status::class,
     ];
 
+    /** @var list<string> */
     protected $dates = ['deleted_at', 'start_date', 'end_date'];
 
     /**
      * Get the invoices for the subscription.
+     */
+    /**
+     * @return HasMany<Invoice, $this>
      */
     public function invoices(): HasMany
     {
@@ -46,7 +65,7 @@ class Subscription extends Model
     /**
      * Get the subscription that this subscription was renewed from, if any.
      *
-     * @return BelongsTo
+     * @return BelongsTo<Subscription, $this>
      */
     public function renewedFrom(): BelongsTo
     {
@@ -56,7 +75,7 @@ class Subscription extends Model
     /**
      * Get the subscriptions that were renewed from this subscription.
      *
-     * @return HasMany
+     * @return HasMany<Subscription, $this>
      */
     public function renewals(): HasMany
     {
@@ -66,6 +85,9 @@ class Subscription extends Model
     /**
      * The member who owns this subscription.
      */
+    /**
+     * @return BelongsTo<Member, $this>
+     */
     public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
@@ -73,6 +95,9 @@ class Subscription extends Model
 
     /**
      * The plan this subscription is for.
+     */
+    /**
+     * @return BelongsTo<Plan, $this>
      */
     public function plan(): BelongsTo
     {

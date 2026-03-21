@@ -37,10 +37,12 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
 
     /**
      * Build the query that powers the expiring soon table.
+     *
+     * @return Builder<Subscription>
      */
     protected function getExpiringSoonQuery(): Builder
     {
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
         $end = $today->addDays(Helpers::getSubscriptionExpiringDays());
 
         return Subscription::query()
@@ -80,10 +82,10 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
                     ->label(__('app.widgets.days_left'))
                     ->alignRight()
                     ->state(function (Subscription $record): string {
-                        $today = CarbonImmutable::today(config('app.timezone'));
-                        $endDate = CarbonImmutable::parse($record->end_date, config('app.timezone'))->startOfDay();
+                        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
+                        $endDate = CarbonImmutable::parse($record->end_date, \App\Support\AppConfig::timezone())->startOfDay();
 
-                        $days = max($today->diffInDays($endDate, false), 0);
+                        $days = (int) max($today->diffInDays($endDate, false), 0);
 
                         return $this->formatDayCount($days);
                     }),
@@ -103,7 +105,7 @@ class ExpiringSoonSubscriptionsTableWidget extends TableWidget
                                 return false;
                             }
 
-                            $today = CarbonImmutable::today(config('app.timezone'))->toDateString();
+                            $today = CarbonImmutable::today(\App\Support\AppConfig::timezone())->toDateString();
 
                             return ! Subscription::query()
                                 ->where('member_id', $record->member_id)

@@ -27,7 +27,7 @@ final class InvoicePdfRenderer
 
         $data = InvoiceDocument::viewData($invoice);
 
-        if (($data['missing'] ?? []) !== []) {
+        if ($data['missing'] !== []) {
             throw new InvoiceDocumentNotRenderable($data);
         }
 

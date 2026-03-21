@@ -7,6 +7,7 @@ use App\Http\Resources\V1\InvoiceTransactionResource;
 use App\Models\Invoice;
 use App\Models\InvoiceTransaction;
 use App\Services\Api\QueryFilters;
+use App\Support\Data;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -44,11 +45,11 @@ class InvoiceTransactionsController extends ApiController
         $transaction = $invoice->transactions()->create([
             'type' => $data['type'],
             'amount' => $data['amount'],
-            'occurred_at' => $data['occurred_at'] ?? now()->timezone(config('app.timezone')),
+            'occurred_at' => $data['occurred_at'] ?? now()->timezone(\App\Support\AppConfig::timezone()),
             'payment_method' => $data['payment_method'] ?? $invoice->payment_method,
             'note' => $data['note'] ?? null,
             'reference_id' => $data['reference_id'] ?? null,
-            'created_by' => $request->user()?->getAuthIdentifier(),
+            'created_by' => Data::int($this->currentUser($request)->getAuthIdentifier(), 0),
         ]);
 
         return new InvoiceTransactionResource($transaction);

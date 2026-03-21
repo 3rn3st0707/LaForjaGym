@@ -25,6 +25,9 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
+/**
+ * @property-read Schema $form
+ */
 class Settings extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -35,7 +38,7 @@ class Settings extends Page implements HasForms
     /** @var string View file for the settings page */
     protected string $view = 'filament.pages.settings';
 
-    /** @var array|null Stores the settings data */
+    /** @var array<string, mixed>|null Stores the settings data */
     public ?array $data = [];
 
     /** @var string|null Stores the uploaded settings file */
@@ -48,13 +51,16 @@ class Settings extends Page implements HasForms
     {
         $settings = Helpers::getSettings();
         $this->data = $settings;
+        $general = is_array($this->data['general'] ?? null) ? $this->data['general'] : [];
 
         // Ensure gym_logo is always set correctly
         foreach (['gym_logo'] as $logoType) {
-            if (! empty($this->data['general'][$logoType]) && is_array($this->data['general'][$logoType])) {
-                $this->data['general'][$logoType] = $this->data['general'][$logoType];
+            if (! empty($general[$logoType]) && is_array($general[$logoType])) {
+                $general[$logoType] = $general[$logoType];
             }
         }
+
+        $this->data['general'] = $general;
 
         $this->form->fill($settings);
     }
@@ -71,6 +77,8 @@ class Settings extends Page implements HasForms
 
     /**
      * Defines the form schema with multiple tabs.
+     *
+     * @return array<int, \Filament\Schemas\Components\Component>
      */
     protected function getFormSchema(): array
     {
@@ -345,24 +353,27 @@ class Settings extends Page implements HasForms
     public function save(): void
     {
         $settings = $this->data ?? [];
+        $general = is_array($settings['general'] ?? null) ? $settings['general'] : [];
 
-        if (! empty($settings['general']['financial_year_start'])) {
-            $settings['general']['financial_year_start'] =
-                Carbon::parse($settings['general']['financial_year_start'])
+        if (! empty($general['financial_year_start']) && is_string($general['financial_year_start'])) {
+            $general['financial_year_start'] =
+                Carbon::parse($general['financial_year_start'])
                     ->toDateString();
         }
-        if (! empty($settings['general']['financial_year_end'])) {
-            $settings['general']['financial_year_end'] =
-                Carbon::parse($settings['general']['financial_year_end'])
+        if (! empty($general['financial_year_end']) && is_string($general['financial_year_end'])) {
+            $general['financial_year_end'] =
+                Carbon::parse($general['financial_year_end'])
                     ->toDateString();
         }
 
         foreach (['gym_logo'] as $logoKey) {
-            $value = $settings['general'][$logoKey] ?? null;
+            $value = $general[$logoKey] ?? null;
             if (is_array($value)) {
-                $settings['general'][$logoKey] = $value[0] ?? null;
+                $general[$logoKey] = $value[0] ?? null;
             }
         }
+
+        $settings['general'] = $general;
 
         try {
             app(SettingsRepository::class)->put($settings);
@@ -402,9 +413,10 @@ class Settings extends Page implements HasForms
         $path = $state->storeAs('images', $state->getClientOriginalName(), 'public');
         $repository = app(SettingsRepository::class);
         $settings = $repository->get();
+        $general = is_array($settings['general'] ?? null) ? $settings['general'] : [];
 
-        $settings['general'] = $settings['general'] ?? [];
-        $settings['general'][$key] = $path;
+        $general[$key] = $path;
+        $settings['general'] = $general;
 
         $repository->put($settings);
 

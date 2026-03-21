@@ -12,7 +12,6 @@ use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Dashboard\Concerns\HasFilters;
-use Filament\Panel;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
@@ -29,21 +28,24 @@ class Dashboard extends \Filament\Pages\Dashboard
 {
     use HasFilters;
 
+    protected static string $routePath = 'dashboard';
+
     protected static ?string $title = null;
 
+    /**
+     * Get the dashboard page title.
+     */
     public function getTitle(): string
     {
         return __('app.dashboard.title');
     }
 
+    /**
+     * Get the dashboard navigation label.
+     */
     public static function getNavigationLabel(): string
     {
         return __('app.navigation.dashboard');
-    }
-
-    public static function getRoutePath(Panel $panel): string
-    {
-        return '/';
     }
 
     /**
@@ -87,7 +89,9 @@ class Dashboard extends \Filament\Pages\Dashboard
                     ->default('7days')
                     ->live()
                     ->afterStateUpdated(function (mixed $state): void {
-                        $this->setPeriod((string) $state);
+                        if (in_array($state, ['7days', '30days', 'month', 'quarter', 'year', 'custom'], true)) {
+                            $this->setPeriod($state);
+                        }
                     })
                     ->grow(false)
                     ->extraFieldWrapperAttributes([
@@ -114,6 +118,9 @@ class Dashboard extends \Filament\Pages\Dashboard
             ]);
     }
 
+    /**
+     * Get the responsive dashboard column layout.
+     */
     public function getColumns(): int|array
     {
         return [
@@ -166,7 +173,7 @@ class Dashboard extends \Filament\Pages\Dashboard
      */
     public function ensureDefaultFilters(): void
     {
-        $period = (string) ($this->filters['period'] ?? '');
+        $period = is_string($this->filters['period'] ?? null) ? $this->filters['period'] : '';
 
         if ($period === 'ytd') {
             $this->filters['period'] = 'year';
@@ -190,13 +197,15 @@ class Dashboard extends \Filament\Pages\Dashboard
     public function setPeriod(string $period): void
     {
         if ($period === 'custom') {
-            $today = CarbonImmutable::today(config('app.timezone'));
+            $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
+            $startDate = is_string($this->filters['startDate'] ?? null) ? $this->filters['startDate'] : null;
+            $endDate = is_string($this->filters['endDate'] ?? null) ? $this->filters['endDate'] : null;
 
             $this->filters = [
                 ...($this->filters ?? []),
                 'period' => 'custom',
-                'startDate' => (string) (($this->filters['startDate'] ?? null) ?: $today->subDays(6)->toDateString()),
-                'endDate' => (string) (($this->filters['endDate'] ?? null) ?: $today->toDateString()),
+                'startDate' => $startDate ?: $today->subDays(6)->toDateString(),
+                'endDate' => $endDate ?: $today->toDateString(),
             ];
 
             $this->updatedFilters();
@@ -212,8 +221,8 @@ class Dashboard extends \Filament\Pages\Dashboard
      */
     public function applyCustomRangeFromFilters(): void
     {
-        $startDate = (string) ($this->filters['startDate'] ?? '');
-        $endDate = (string) ($this->filters['endDate'] ?? '');
+        $startDate = is_string($this->filters['startDate'] ?? null) ? $this->filters['startDate'] : '';
+        $endDate = is_string($this->filters['endDate'] ?? null) ? $this->filters['endDate'] : '';
 
         if (($startDate === '') || ($endDate === '')) {
             return;
@@ -229,7 +238,7 @@ class Dashboard extends \Filament\Pages\Dashboard
      */
     private function applyPresetRange(string $preset): void
     {
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
 
         [$start, $end, $period] = match ($preset) {
             '30days' => [$today->subDays(29), $today, '30days'],
@@ -258,7 +267,7 @@ class Dashboard extends \Filament\Pages\Dashboard
      */
     private function applyCustomRange(string $startDate, string $endDate): void
     {
-        $timezone = config('app.timezone');
+        $timezone = \App\Support\AppConfig::timezone();
 
         $start = CarbonImmutable::parse($startDate, $timezone)->startOfDay();
         $end = CarbonImmutable::parse($endDate, $timezone)->endOfDay();

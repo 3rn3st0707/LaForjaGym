@@ -26,7 +26,7 @@ class CreateMember extends CreateRecord
             $enquiry = Enquiry::find($this->enquiryId);
             if ($enquiry) {
                 $this->form->fill([
-                    ...$this->data,
+                    ...($this->data ?? []),
                     'name' => $enquiry->name,
                     'email' => $enquiry->email,
                     'contact' => $enquiry->contact,

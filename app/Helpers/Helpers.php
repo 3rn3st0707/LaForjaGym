@@ -5,6 +5,7 @@ namespace App\Helpers;
 use App\Contracts\SequenceRepository;
 use App\Contracts\SettingsRepository;
 use App\Models\Plan;
+use App\Services\JsonSettingsRepository;
 use App\Support\Billing\Currency;
 use App\Support\Billing\Discounts;
 use App\Support\Billing\TaxRate;
@@ -12,7 +13,7 @@ use App\Support\Dates\FiscalYear;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
-use Nnjeim\World\World;
+use Nnjeim\World\WorldHelper;
 
 class Helpers
 {
@@ -30,11 +31,15 @@ class Helpers
         'Other',
     ];
 
+    /**
+     * @param  array<string, mixed>|null  $override
+     */
     public static function setTestSettingsOverride(?array $override): void
     {
+        /** @var mixed $repository */
         $repository = app(SettingsRepository::class);
 
-        if (method_exists($repository, 'setTestOverride')) {
+        if ($repository instanceof JsonSettingsRepository) {
             $repository->setTestOverride($override);
         }
     }
@@ -47,8 +52,16 @@ class Helpers
         return app(SettingsRepository::class)->get();
     }
 
+    public static function appTimezone(): string
+    {
+        return \App\Support\AppConfig::timezone();
+    }
+
     /**
      * Get a list of all countries.
+     */
+    /**
+     * @return array<string, string>
      */
     public static function getCountries(): array
     {
@@ -56,7 +69,7 @@ class Helpers
             return [];
         }
 
-        $response = World::countries();
+        $response = self::worldResponse('countries');
 
         if (! $response->success) {
             return [];
@@ -64,13 +77,17 @@ class Helpers
 
         return collect($response->data)
             ->pluck('name', 'name')
-            ->toArray();
+            ->mapWithKeys(fn (mixed $name, mixed $key): array => [\App\Support\Data::string($key) => \App\Support\Data::string($name)])
+            ->all();
     }
 
     /**
      * Get a list of states for a specific country.
      *
-     * @param  int|null  $countryName  The name of the country
+     * @param  string|null  $countryName  The name of the country
+     */
+    /**
+     * @return array<string, string>
      */
     public static function getStates(?string $countryName): array
     {
@@ -83,7 +100,7 @@ class Helpers
         }
 
         // Retrieve country details to get the country code
-        $countryResponse = World::countries([
+        $countryResponse = self::worldResponse('countries', [
             'filters' => ['name' => $countryName],
         ]);
 
@@ -98,7 +115,7 @@ class Helpers
         }
 
         // Retrieve states using the country code
-        $stateResponse = World::states([
+        $stateResponse = self::worldResponse('states', [
             'filters' => ['country_id' => $countryId],
         ]);
 
@@ -108,13 +125,17 @@ class Helpers
 
         return collect($stateResponse->data)
             ->pluck('name', 'name')
-            ->toArray();
+            ->mapWithKeys(fn (mixed $name, mixed $key): array => [\App\Support\Data::string($key) => \App\Support\Data::string($name)])
+            ->all();
     }
 
     /**
      * Get a list of cities for a specific state using its name.
      *
      * @param  string|null  $stateName  The name of the state
+     */
+    /**
+     * @return array<string, string>
      */
     public static function getCities(?string $stateName): array
     {
@@ -127,7 +148,7 @@ class Helpers
         }
 
         // Retrieve state details to get the state code
-        $stateResponse = World::states([
+        $stateResponse = self::worldResponse('states', [
             'filters' => ['name' => $stateName],
         ]);
 
@@ -142,7 +163,7 @@ class Helpers
         }
 
         // Retrieve cities using the state code
-        $cityResponse = World::cities([
+        $cityResponse = self::worldResponse('cities', [
             'filters' => ['state_id' => $stateCode],
         ]);
 
@@ -152,11 +173,15 @@ class Helpers
 
         return collect($cityResponse->data)
             ->pluck('name', 'name')
-            ->toArray();
+            ->mapWithKeys(fn (mixed $name, mixed $key): array => [\App\Support\Data::string($key) => \App\Support\Data::string($name)])
+            ->all();
     }
 
     /**
      * Get a list of currencies.
+     */
+    /**
+     * @return array<string, string>
      */
     public static function getCurrencies(): array
     {
@@ -164,7 +189,7 @@ class Helpers
             return [];
         }
 
-        $currencyResponse = World::currencies([
+        $currencyResponse = self::worldResponse('currencies', [
             'fields' => 'name,code',
         ]);
 
@@ -174,15 +199,14 @@ class Helpers
 
         return collect($currencyResponse->data)
             ->pluck('name', 'code')
-            ->toArray();
+            ->mapWithKeys(fn (mixed $name, mixed $key): array => [\App\Support\Data::string($key) => \App\Support\Data::string($name)])
+            ->all();
     }
 
     /**
      * Get the currency code
-     *
-     * @return string
      */
-    public static function getCurrencyCode()
+    public static function getCurrencyCode(): string
     {
         return Currency::codeFromSettings(self::getSettings(), self::DEFAULT_CURRENCY);
     }
@@ -193,7 +217,8 @@ class Helpers
     public static function getSubscriptionExpiringDays(): int
     {
         $settings = self::getSettings();
-        $days = $settings['subscriptions']['expiring_days'] ?? 7;
+        $subscriptions = is_array($settings['subscriptions'] ?? null) ? $settings['subscriptions'] : [];
+        $days = $subscriptions['expiring_days'] ?? 7;
 
         if (! is_numeric($days)) {
             return 7;
@@ -210,7 +235,8 @@ class Helpers
     public static function getExpenseCategories(): array
     {
         $settings = self::getSettings();
-        $categories = $settings['expenses']['categories'] ?? null;
+        $expenses = is_array($settings['expenses'] ?? null) ? $settings['expenses'] : [];
+        $categories = $expenses['categories'] ?? null;
 
         if (! is_array($categories) || empty($categories)) {
             return self::DEFAULT_EXPENSE_CATEGORIES;
@@ -218,7 +244,7 @@ class Helpers
 
         $normalized = [];
         foreach ($categories as $category) {
-            $category = trim((string) $category);
+            $category = trim(\App\Support\Data::string($category));
             if ($category === '') {
                 continue;
             }
@@ -261,6 +287,9 @@ class Helpers
 
     /**
      * Get the discounts from settings.
+     */
+    /**
+     * @return array<string, string>
      */
     public static function getDiscounts(): array
     {
@@ -322,15 +351,17 @@ class Helpers
      */
     public static function getFiscalSpan(Carbon $date): array
     {
-        return FiscalYear::spanForDate($date, self::getSettings()['general'] ?? []);
+        $generalSettings = self::getSettings()['general'] ?? [];
+
+        return FiscalYear::spanForDate($date, is_array($generalSettings) ? $generalSettings : []);
     }
 
     /**
      * Generate the next sequential identifier for a given type and model.
      *
      * @param  string  $type  The type identifier used to fetch the corresponding settings.
-     * @param  string  $modelClass  The fully qualified class name of the Eloquent model to query.
-     * @param  Carbon|string|null  $dateString  A date (Carbon instance or date string) used to determine the financial year span.
+     * @param  class-string  $modelClass  The fully qualified class name of the Eloquent model to query.
+     * @param  string|null  $dateString  A date string used to determine the financial year span.
      * @param  string|null  $modalColumn  The model column to search for the last value (e.g. 'number' or 'code').
      * @return string The newly generated identifier, prefixed and suffixed as configured.
      */
@@ -349,11 +380,23 @@ class Helpers
      *
      * @param  string  $type  The type of setting to update.
      * @param  string  $newNumber  The new number to set as the last number.
-     * @param  Carbon|string|null  $date  The date to check against the financial year.
+     * @param  string|null  $date  The date to check against the financial year.
      */
     public static function updateLastNumber(string $type, string $newNumber, ?string $date = null): void
     {
         app(SequenceRepository::class)->update($type, $newNumber, $date);
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return object{success: bool, data: array<int, array<string, mixed>>}
+     */
+    private static function worldResponse(string $method, array $parameters = []): object
+    {
+        /** @var object{success: bool, data: array<int, array<string, mixed>>} $response */
+        $response = app(WorldHelper::class)->__call($method, [$parameters]);
+
+        return $response;
     }
 
     /**
@@ -372,7 +415,7 @@ class Helpers
         }
 
         return Carbon::parse($startDate)
-            ->addDays($plan->days)
+            ->addDays((int) $plan->days)
             ->toDateString();
     }
 }

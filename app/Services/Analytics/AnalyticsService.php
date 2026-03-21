@@ -10,6 +10,8 @@ use App\Models\Member;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Support\Analytics\AnalyticsDateRange;
+use App\Support\AppConfig;
+use App\Support\Data;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -105,9 +107,12 @@ class AnalyticsService
             ->groupBy('day')
             ->orderBy('day')
             ->pluck('total', 'day')
-            ->map(fn ($value): float => (float) $value);
+            ->map(fn ($value): float => Data::float($value));
 
-        return $rows->toArray();
+        /** @var array<string, float> $result */
+        $result = $rows->all();
+
+        return $result;
     }
 
     /**
@@ -157,7 +162,7 @@ class AnalyticsService
      */
     public function expiringSubscriptionsCount(?CarbonImmutable $today = null): int
     {
-        $today ??= CarbonImmutable::today(config('app.timezone'));
+        $today ??= CarbonImmutable::today(AppConfig::timezone());
         $expiringDays = Helpers::getSubscriptionExpiringDays();
         $end = $today->addDays($expiringDays);
 
@@ -194,9 +199,12 @@ class AnalyticsService
             ->groupBy('day')
             ->orderBy('day')
             ->pluck('net', 'day')
-            ->map(fn ($value): float => (float) $value);
+            ->map(fn ($value): float => Data::float($value));
 
-        return $rows->toArray();
+        /** @var array<string, float> $result */
+        $result = $rows->all();
+
+        return $result;
     }
 
     /**
@@ -217,9 +225,12 @@ class AnalyticsService
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('net', 'month')
-            ->map(fn ($value): float => (float) $value);
+            ->map(fn ($value): float => Data::float($value));
 
-        return $rows->toArray();
+        /** @var array<string, float> $result */
+        $result = $rows->all();
+
+        return $result;
     }
 
     /**
@@ -237,9 +248,12 @@ class AnalyticsService
             ->groupBy('day')
             ->orderBy('day')
             ->pluck('total', 'day')
-            ->map(fn ($value): float => (float) $value);
+            ->map(fn ($value): float => Data::float($value));
 
-        return $rows->toArray();
+        /** @var array<string, float> $result */
+        $result = $rows->all();
+
+        return $result;
     }
 
     /**
@@ -260,9 +274,12 @@ class AnalyticsService
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('total', 'month')
-            ->map(fn ($value): float => (float) $value);
+            ->map(fn ($value): float => Data::float($value));
 
-        return $rows->toArray();
+        /** @var array<string, float> $result */
+        $result = $rows->all();
+
+        return $result;
     }
 
     /**
@@ -349,7 +366,7 @@ class AnalyticsService
         }
 
         $top = $rows->take($limit)->values();
-        $otherTotal = (float) $rows->slice($limit)->sum('total');
+        $otherTotal = Data::float($rows->slice($limit)->sum('total'));
 
         if ($otherTotal <= 0) {
             return $top;

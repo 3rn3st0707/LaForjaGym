@@ -92,17 +92,25 @@ final class ResourceQueryRules
      */
     private static function rules(string $resourceKey): array
     {
-        $schema = self::SCHEMAS[$resourceKey] ?? null;
-
-        if (! is_string($schema) || $schema === '') {
+        if (! array_key_exists($resourceKey, self::SCHEMAS)) {
             throw new InvalidArgumentException("Unknown API resource key [{$resourceKey}].");
         }
+
+        $schema = self::SCHEMAS[$resourceKey];
 
         if (! method_exists($schema, 'queryRules')) {
             throw new InvalidArgumentException("API schema [{$schema}] must define a static queryRules() method.");
         }
 
-        /** @var array $rules */
+        /** @var array{
+         *   searchable: list<string>,
+         *   sortable: list<string>,
+         *   default_sort: string,
+         *   status_column: string|null,
+         *   includes: list<string>,
+         *   filters: array<string, array{type: string, column: string}>
+         * } $rules
+         */
         $rules = $schema::queryRules();
 
         foreach (['searchable', 'sortable', 'default_sort', 'status_column', 'includes', 'filters'] as $key) {

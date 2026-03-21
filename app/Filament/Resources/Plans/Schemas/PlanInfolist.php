@@ -23,6 +23,11 @@ class PlanInfolist
                 Fieldset::make('')
                     ->label(function (Plan $record): HtmlString {
                         $status = $record->status;
+
+                        if ($status === null) {
+                            return new HtmlString('');
+                        }
+
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex ml-2" :color="$color">
                                 {{ $label }}

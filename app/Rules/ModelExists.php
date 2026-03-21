@@ -18,7 +18,7 @@ final class ModelExists implements ValidationRule
     public function __construct(private string $modelClass) {}
 
     /**
-     * @param  Closure(string): void  $fail
+     * @param  Closure(string, string|null=): \Illuminate\Translation\PotentiallyTranslatedString  $fail
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

@@ -19,13 +19,7 @@ class MembershipMetricsWidget extends StatsOverviewWidget
 
     protected static ?int $sort = -41;
 
-    /**
-     * @var int | string | array<string, int | null>
-     */
-    protected int|string|array $columnSpan = [
-        'default' => 1,
-        'md' => 'full',
-    ];
+    protected int|string|array $columnSpan = 'full';
 
     /**
      * @var int | array<string, ?int> | null

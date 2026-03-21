@@ -25,6 +25,11 @@ class EnquiryInfolist
                 Section::make(__('app.ui.details'))
                     ->heading(function (Enquiry $record): HtmlString {
                         $status = $record->status;
+
+                        if ($status === null) {
+                            return new HtmlString(e(__('app.ui.details')));
+                        }
+
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex" style="margin-left:6px;" :color="$color">
                                         {{ $label }}

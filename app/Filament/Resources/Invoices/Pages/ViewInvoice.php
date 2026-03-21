@@ -3,9 +3,13 @@
 namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Models\Invoice;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
+/**
+ * @property-read Invoice $record
+ */
 class ViewInvoice extends ViewRecord
 {
     protected static string $resource = InvoiceResource::class;
@@ -28,7 +32,7 @@ class ViewInvoice extends ViewRecord
         return [
             __('app.navigation.groups.billing'),
             InvoiceResource::getUrl('index') => InvoiceResource::getNavigationLabel(),
-            $this->record->number,
+            (string) $this->record->number,
         ];
     }
 }

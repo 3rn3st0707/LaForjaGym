@@ -115,6 +115,9 @@ class MemberResource extends Resource
         ];
     }
 
+    /**
+     * @return Builder<Member>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

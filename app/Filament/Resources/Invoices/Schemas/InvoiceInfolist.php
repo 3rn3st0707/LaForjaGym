@@ -29,6 +29,11 @@ class InvoiceInfolist
                         Section::make()
                             ->heading(function (Invoice $record): HtmlString {
                                 $status = $record->status;
+
+                                if ($status === null) {
+                                    return new HtmlString(e(__('app.ui.details')));
+                                }
+
                                 $html = Blade::render(
                                     '<x-filament::badge class="inline-flex ml-2" :color="$color">
                                         {{ $label }}

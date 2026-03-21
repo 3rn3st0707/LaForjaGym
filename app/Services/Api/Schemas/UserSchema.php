@@ -2,9 +2,11 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\User;
 use App\Rules\ModelExists;
 use App\Rules\ModelUnique;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
@@ -95,10 +97,14 @@ final class UserSchema
     public static function resource(User $user, bool $includePermissions = false): array
     {
         $roles = $user->relationLoaded('roles')
-            ? $user->roles->map(fn ($role): array => [
-                'id' => (int) $role->id,
-                'name' => (string) $role->name,
-            ])->values()
+            ? $user->roles->map(function (Model $role): array {
+                assert($role instanceof Role);
+
+                return [
+                    'id' => (int) $role->id,
+                    'name' => (string) $role->name,
+                ];
+            })->values()
             : collect();
 
         $payload = [
@@ -108,7 +114,7 @@ final class UserSchema
             'contact' => $user->contact ? (string) $user->contact : null,
             'gender' => $user->gender ? (string) $user->gender : null,
             'dob' => $user->dob?->toDateString(),
-            'status' => $user->status?->value ?? (is_string($user->status) ? $user->status : null),
+            'status' => Status::valueOf($user->status),
             'photo' => $user->photo ? (string) $user->photo : null,
             'photo_url' => $user->photo ? Storage::disk('public')->url((string) $user->photo) : null,
             'address' => $user->address ? (string) $user->address : null,

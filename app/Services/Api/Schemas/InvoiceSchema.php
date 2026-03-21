@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\Invoice;
 use App\Models\Subscription;
 use App\Rules\ModelExists;
@@ -94,7 +95,7 @@ final class InvoiceSchema
             'date' => $invoice->date?->toDateString(),
             'due_date' => $invoice->due_date?->toDateString(),
             'payment_method' => $invoice->payment_method ? (string) $invoice->payment_method : null,
-            'status' => $invoice->status?->value ?? (is_string($invoice->status) ? $invoice->status : null),
+            'status' => Status::valueOf($invoice->status),
             'tax' => (float) ($invoice->tax ?? 0),
             'discount' => $invoice->discount !== null ? (float) $invoice->discount : null,
             'discount_amount' => (float) ($invoice->discount_amount ?? 0),

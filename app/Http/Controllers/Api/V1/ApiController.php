@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +21,7 @@ abstract class ApiController extends Controller
      */
     protected function requirePermission(Request $request, string $permission): void
     {
-        abort_unless($request->user()?->can($permission), 403);
+        abort_unless($request->user()?->can($permission) === true, 403);
     }
 
     /**
@@ -42,6 +45,17 @@ abstract class ApiController extends Controller
     }
 
     /**
+     * Return the authenticated API user or abort with 401.
+     */
+    protected function currentUser(Request $request): User
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+
+        return $user;
+    }
+
+    /**
      * Restore a soft-deleted record for a given model class.
      *
      * @template TModel of \Illuminate\Database\Eloquent\Model
@@ -56,8 +70,11 @@ abstract class ApiController extends Controller
         abort_unless(in_array(SoftDeletes::class, class_uses_recursive($modelClass), true), 404);
 
         /** @var TModel $record */
-        $record = $modelClass::withTrashed()->findOrFail($id);
-        $record->restore();
+        $record = $this->softDeletedQuery($modelClass)->findOrFail($id);
+
+        if (method_exists($record, 'restore')) {
+            $record->restore();
+        }
 
         return $record;
     }
@@ -73,7 +90,23 @@ abstract class ApiController extends Controller
 
         abort_unless(in_array(SoftDeletes::class, class_uses_recursive($modelClass), true), 404);
 
-        $record = $modelClass::withTrashed()->findOrFail($id);
+        $record = $this->softDeletedQuery($modelClass)->findOrFail($id);
         $record->forceDelete();
+    }
+
+    /**
+     * Create a query that includes soft-deleted records for the given model class.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TModel>  $modelClass
+     * @return Builder<TModel>
+     */
+    private function softDeletedQuery(string $modelClass): Builder
+    {
+        /** @var Builder<TModel> $query */
+        $query = $modelClass::query()->withoutGlobalScope(SoftDeletingScope::class);
+
+        return $query;
     }
 }

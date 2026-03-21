@@ -12,8 +12,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string|null $number
+ * @property int|null $subscription_id
+ * @property Carbon|null $date
+ * @property Carbon|null $due_date
+ * @property string|null $payment_method
+ * @property Status|null $status
+ * @property float|null $tax
+ * @property int|float|string|null $discount
+ * @property float|null $discount_amount
+ * @property string|null $discount_note
+ * @property float|null $paid_amount
+ * @property float|null $total_amount
+ * @property float|null $due_amount
+ * @property float|null $subscription_fee
+ * @property-read Subscription|null $subscription
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactions
+ */
 class Invoice extends Model
 {
+    /** @use HasFactory<\Database\Factories\InvoiceFactory> */
     use HasFactory, SoftDeletes;
 
     /**
@@ -38,11 +58,6 @@ class Invoice extends Model
         'subscription_fee',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'date' => 'date',
         'due_date' => 'date',
@@ -51,6 +66,9 @@ class Invoice extends Model
 
     /**
      * The subscription this invoice is for.
+     */
+    /**
+     * @return BelongsTo<Subscription, $this>
      */
     public function subscription(): BelongsTo
     {
@@ -65,21 +83,14 @@ class Invoice extends Model
      */
     public function getDisplayStatusLabel(): string
     {
-        $status = $this->status;
-
-        if ($status instanceof Status) {
-            return $status->getLabel();
-        }
-
-        if (is_string($status) && filled($status)) {
-            return ucfirst($status);
-        }
-
-        return '';
+        return $this->status?->getLabel() ?? '';
     }
 
     /**
      * Get the transactions for the invoice.
+     */
+    /**
+     * @return HasMany<InvoiceTransaction, $this>
      */
     public function transactions(): HasMany
     {
@@ -108,7 +119,7 @@ class Invoice extends Model
         $netPaid = max($paymentsTotal - $refundsTotal, 0);
         $netPaid = min($netPaid, $total);
 
-        $status = $this->status?->value ?? 'issued';
+        $status = $this->status->value ?? 'issued';
         $due = max($total - $netPaid, 0);
 
         if ($status === 'cancelled') {
@@ -127,7 +138,7 @@ class Invoice extends Model
 
         $isDueOver = $due > 0
             && $this->due_date
-            && Carbon::parse($this->due_date)->lt(Carbon::today(config('app.timezone')));
+            && Carbon::parse($this->due_date)->lt(Carbon::today(\App\Support\AppConfig::timezone()));
 
         if ($isDueOver) {
             $status = 'overdue';
@@ -181,11 +192,17 @@ class Invoice extends Model
                 $transaction = new InvoiceTransaction([
                     'type' => 'payment',
                     'amount' => $paid,
-                    'occurred_at' => now()->timezone(config('app.timezone')),
+                    'occurred_at' => now()->timezone(\App\Support\AppConfig::timezone()),
                     'payment_method' => $invoice->payment_method,
                     'note' => 'Initial payment',
                     'created_by' => auth()->id(),
                 ]);
+
+                $gymId = $invoice->getAttribute('gym_id');
+
+                if (filled($gymId)) {
+                    $transaction->setAttribute('gym_id', $gymId);
+                }
 
                 $transaction->invoice()->associate($invoice);
                 $transaction->saveQuietly();

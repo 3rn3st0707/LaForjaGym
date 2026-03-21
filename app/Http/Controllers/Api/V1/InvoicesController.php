@@ -8,6 +8,7 @@ use App\Http\Resources\V1\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Subscription;
 use App\Services\Api\QueryFilters;
+use App\Support\Data;
 use App\Support\Invoices\InvoiceDocument;
 use App\Support\Invoices\InvoiceDocumentNotRenderable;
 use App\Support\Invoices\InvoicePdfRenderer;
@@ -52,13 +53,15 @@ class InvoicesController extends ApiController
         /** @var Subscription $subscription */
         $subscription = Subscription::query()
             ->with('plan')
-            ->findOrFail((int) $data['subscription_id']);
+            ->findOrFail(Data::int($data['subscription_id'] ?? null));
 
         $data['due_date'] = $data['due_date'] ?? $data['date'];
         $data['status'] = $data['status'] ?? 'issued';
 
         if (! array_key_exists('subscription_fee', $data) || $data['subscription_fee'] === null) {
-            $data['subscription_fee'] = (float) ($subscription->plan?->amount ?? 0);
+            $data['subscription_fee'] = $subscription->plan
+                ? (float) $subscription->plan->amount
+                : 0.0;
         }
 
         $invoice = Invoice::create($data);

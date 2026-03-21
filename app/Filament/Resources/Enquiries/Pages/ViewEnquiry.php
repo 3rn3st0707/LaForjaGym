@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Enquiries\Pages;
 
+use App\Enums\Status;
 use App\Filament\Resources\Enquiries\EnquiryResource;
 use App\Filament\Resources\Members\MemberResource;
 use App\Models\Enquiry;
@@ -10,6 +11,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
+/**
+ * @property-read Enquiry $record
+ */
 class ViewEnquiry extends ViewRecord
 {
     protected static string $resource = EnquiryResource::class;
@@ -32,7 +36,7 @@ class ViewEnquiry extends ViewRecord
                 ->icon('heroicon-s-arrows-right-left')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (Enquiry $record) => $record->status === 'lead')
+                ->visible(fn (Enquiry $record) => $record->status === Status::Lead)
                 ->url(fn (Enquiry $record) => MemberResource::getUrl(
                     'create',
                     ['enquiry_id' => $record->id],

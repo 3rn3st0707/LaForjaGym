@@ -61,6 +61,11 @@ enum Status: string implements HasColor, HasLabel
 
     public function getColor(): string
     {
-        return self::COLORS[$this->value] ?? 'secondary';
+        return self::COLORS[$this->value];
+    }
+
+    public static function valueOf(?self $status): ?string
+    {
+        return $status?->value;
     }
 }

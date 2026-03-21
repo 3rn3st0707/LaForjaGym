@@ -38,7 +38,7 @@ class UserTable
                 ImageColumn::make('photo')
                     ->label(__('app.fields.photo'))
                     ->circular()
-                    ->defaultImageUrl(fn (User $record): ?string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name),
+                    ->defaultImageUrl(fn (User $record): string => 'https://ui-avatars.com/api/?background=000&color=fff&name='.$record->name),
                 TextColumn::make('name')
                     ->label(__('app.fields.name'))
                     ->sortable()
@@ -77,7 +77,7 @@ class UserTable
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
                 $records = __('app.resources.users.plural');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $from && ! $to) {
                     return $status
@@ -95,13 +95,13 @@ class UserTable
                     ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
                     : $base;
             })
-            ->emptyStateDescription(function ($livewire): ?string {
+            ->emptyStateDescription(function ($livewire): string {
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
-                $records = __('app.resources.users.plural');
-                $record = __('app.resources.users.singular');
+                $records = (string) __('app.resources.users.plural');
+                $record = (string) __('app.resources.users.singular');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 if (! $fromRaw && ! $toRaw) {
                     return $status
@@ -109,8 +109,8 @@ class UserTable
                         : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : (string) __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : (string) __('app.common.today');
 
                 if ($tab === 'all') {
                     return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);

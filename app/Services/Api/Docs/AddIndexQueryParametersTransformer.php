@@ -73,7 +73,7 @@ final class AddIndexQueryParametersTransformer implements OperationTransformer
         }
 
         foreach ($filters as $key => $rule) {
-            $type = (string) ($rule['type'] ?? 'exact');
+            $type = $rule['type'];
 
             $name = "filter[{$key}]";
             $description = match ($type) {

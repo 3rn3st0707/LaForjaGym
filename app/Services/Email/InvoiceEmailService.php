@@ -10,6 +10,8 @@ use App\Mail\InvoiceIssuedMail;
 use App\Mail\InvoicePaymentReceiptMail;
 use App\Models\Invoice;
 use App\Models\InvoiceTransaction;
+use App\Support\AppConfig;
+use App\Support\Data;
 use App\Support\Invoices\InvoiceDocument;
 use App\Support\Invoices\InvoicePdfRenderer;
 use Illuminate\Support\Facades\Log;
@@ -65,7 +67,9 @@ final class InvoiceEmailService
     public function sendInvoiceIssuedEmail(int $invoiceId, string $toEmail, ?string $note = null): void
     {
         $invoice = InvoiceDocument::loadForRendering(Invoice::query()->findOrFail($invoiceId));
-        $memberName = (string) ($invoice->subscription?->member?->name ?? '');
+        $memberName = $invoice->subscription && $invoice->subscription->member
+            ? (string) $invoice->subscription->member->name
+            : '';
 
         if (! $this->isValidRecipientEmail($toEmail, [
             'invoice_id' => $invoiceId,
@@ -77,21 +81,22 @@ final class InvoiceEmailService
 
         $this->withLocaleFromSettings($settings, function () use ($settings, $invoice, $toEmail, $note, $memberName): void {
             $gym = $this->gymIdentityFromSettings($settings);
-            $subjectTemplate = (string) data_get($settings,
+            $gymName = $gym['name'] !== '' ? $gym['name'] : 'Gymie';
+            $subjectTemplate = Data::string(data_get($settings,
                 'notifications.email.invoice_subject_template',
                 'Invoice {invoice_number} - {status}',
-            );
+            ));
 
             $pdfBytes = $this->renderer->render($invoice);
             $subject = $this->renderSubjectTemplate(
                 $subjectTemplate,
-                $this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+                $this->invoiceSubjectTokens($invoice, $gymName, $memberName),
             );
 
             $mailable = new InvoiceIssuedMail(
                 invoice: $invoice,
                 subjectLine: $subject,
-                gymName: $gym['name'],
+                gymName: $gymName,
                 gymEmail: $gym['email'],
                 gymContact: $gym['contact'],
                 memberName: $memberName,
@@ -100,7 +105,7 @@ final class InvoiceEmailService
             );
 
             if (filled($gym['email'])) {
-                $mailable->replyTo($gym['email'], $gym['name']);
+                $mailable->replyTo($gym['email'], $gymName);
             }
 
             Mail::to($toEmail)->send($mailable);
@@ -118,7 +123,9 @@ final class InvoiceEmailService
             ->where('invoice_id', $invoice->getKey())
             ->firstOrFail();
 
-        $memberName = (string) ($invoice->subscription?->member?->name ?? '');
+        $memberName = $invoice->subscription && $invoice->subscription->member
+            ? (string) $invoice->subscription->member->name
+            : '';
 
         if (! $this->isValidRecipientEmail($toEmail, [
             'invoice_id' => $invoiceId,
@@ -131,16 +138,18 @@ final class InvoiceEmailService
 
         $this->withLocaleFromSettings($settings, function () use ($settings, $invoice, $transaction, $toEmail, $note, $memberName): void {
             $gym = $this->gymIdentityFromSettings($settings);
-            $subjectTemplate = (string) data_get($settings,
+            $gymName = $gym['name'] !== '' ? $gym['name'] : 'Gymie';
+            $subjectTemplate = Data::string(data_get($settings,
                 'notifications.email.receipt_subject_template',
                 'Payment received - {invoice_number}',
-            );
+            ));
 
             $pdfBytes = $this->renderer->render($invoice);
             $subject = $this->renderSubjectTemplate(
                 $subjectTemplate,
                 [
                     ...$this->invoiceSubjectTokens($invoice, $gym['name'], $memberName),
+                    ...$this->invoiceSubjectTokens($invoice, $gymName, $memberName),
                     'payment_amount' => Helpers::formatCurrency((float) ($transaction->amount ?? 0)),
                 ],
             );
@@ -149,7 +158,7 @@ final class InvoiceEmailService
                 invoice: $invoice,
                 transaction: $transaction,
                 subjectLine: $subject,
-                gymName: $gym['name'],
+                gymName: $gymName,
                 gymEmail: $gym['email'],
                 gymContact: $gym['contact'],
                 memberName: $memberName,
@@ -158,7 +167,7 @@ final class InvoiceEmailService
             );
 
             if (filled($gym['email'])) {
-                $mailable->replyTo($gym['email'], $gym['name']);
+                $mailable->replyTo($gym['email'], $gymName);
             }
 
             Mail::to($toEmail)->send($mailable);
@@ -177,8 +186,8 @@ final class InvoiceEmailService
     private function withLocaleFromSettings(array $settings, callable $callback): mixed
     {
         $originalLocale = app()->getLocale();
-        $desiredLocale = (string) data_get($settings, 'general.locale', $originalLocale);
-        $supportedLocales = (array) config('app.supported_locales', []);
+        $desiredLocale = Data::string(data_get($settings, 'general.locale', $originalLocale), $originalLocale);
+        $supportedLocales = AppConfig::supportedLocales();
 
         if ($desiredLocale !== '' && in_array($desiredLocale, $supportedLocales, true)) {
             app()->setLocale($desiredLocale);
@@ -219,9 +228,9 @@ final class InvoiceEmailService
     private function gymIdentityFromSettings(array $settings): array
     {
         return [
-            'name' => (string) data_get($settings, 'general.gym_name', config('app.name')),
-            'email' => (string) data_get($settings, 'general.gym_email', ''),
-            'contact' => (string) data_get($settings, 'general.gym_contact', ''),
+            'name' => Data::string(data_get($settings, 'general.gym_name', AppConfig::string('app.name'))),
+            'email' => Data::string(data_get($settings, 'general.gym_email', '')),
+            'contact' => Data::string(data_get($settings, 'general.gym_contact', '')),
         ];
     }
 
@@ -233,7 +242,7 @@ final class InvoiceEmailService
     private function invoiceSubjectTokens(Invoice $invoice, string $gymName, string $memberName): array
     {
         return [
-            'invoice_number' => (string) ($invoice->number ?? ''),
+            'invoice_number' => Data::string($invoice->number),
             'status' => $invoice->getDisplayStatusLabel(),
             'total' => Helpers::formatCurrency((float) ($invoice->total_amount ?? 0)),
             'paid' => Helpers::formatCurrency((float) ($invoice->paid_amount ?? 0)),
@@ -254,9 +263,9 @@ final class InvoiceEmailService
     private function renderSubjectTemplate(string $template, array $tokens): string
     {
         $rendered = preg_replace_callback('/\{([a-z_]+)\}/i', function (array $matches) use ($tokens): string {
-            $key = strtolower((string) $matches[1]);
+            $key = strtolower(Data::string($matches[1]));
 
-            return array_key_exists($key, $tokens) ? $tokens[$key] : (string) $matches[0];
+            return array_key_exists($key, $tokens) ? $tokens[$key] : Data::string($matches[0]);
         }, $template) ?? $template;
 
         $rendered = trim($rendered);
@@ -265,6 +274,6 @@ final class InvoiceEmailService
             return __('app.resources.invoices.singular');
         }
 
-        return (string) Str::of($rendered)->limit(150, '…');
+        return Data::string(Str::of($rendered)->limit(150, '…'));
     }
 }

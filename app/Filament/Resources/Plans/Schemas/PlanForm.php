@@ -25,7 +25,7 @@ class PlanForm
                 Fieldset::make()
                     ->label(function (Get $get): HtmlString {
                         $rawStatus = $get('status');
-                        $status = Status::tryFrom($rawStatus) ?? Status::Active;
+                        $status = Status::tryFrom(\App\Support\Data::string($rawStatus, Status::Active->value)) ?? Status::Active;
                         $html = Blade::render(
                             '<x-filament::badge class="inline-flex ml-2" :color="$color">
                                 {{ $label }}

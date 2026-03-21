@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Data;
 use Carbon\Carbon;
 
 /**
@@ -43,14 +44,15 @@ class SubscriptionRenewalService
      */
     public function renew(Subscription $record, array $data): array
     {
-        return Subscription::query()->getConnection()->transaction(function () use ($record, $data): array {
-            $timezone = config('app.timezone');
+        /** @var array{subscription: Subscription, invoice: Invoice} $result */
+        $result = Subscription::query()->getConnection()->transaction(function () use ($record, $data): array {
+            $timezone = \App\Support\AppConfig::timezone();
             $today = Carbon::today($timezone);
 
-            $plan = Plan::findOrFail((int) $data['plan_id']);
+            $plan = Plan::findOrFail(Data::int($data['plan_id']));
 
-            $startDate = Carbon::parse($data['start_date'])->toDateString();
-            $endDate = $data['end_date'] ?? Helpers::calculateSubscriptionEndDate($startDate, (int) $plan->id);
+            $startDate = Carbon::parse(Data::string($data['start_date']))->toDateString();
+            $endDate = Data::string($data['end_date'] ?? null) ?: Helpers::calculateSubscriptionEndDate($startDate, Data::int($plan->id));
             $endDate = Carbon::parse($endDate)->toDateString();
 
             $status = Carbon::parse($startDate)->gt($today)
@@ -74,24 +76,24 @@ class SubscriptionRenewalService
 
             $invoiceData = $data['invoice'] ?? [];
 
-            $fee = round((float) $plan->amount, 2);
+            $fee = round(Data::float($plan->amount), 2);
 
-            $discountPct = max((int) ($invoiceData['discount'] ?? 0), 0);
-            $discountAmount = (float) ($invoiceData['discount_amount'] ?? 0);
+            $discountPct = max(Data::int($invoiceData['discount'] ?? 0), 0);
+            $discountAmount = Data::float($invoiceData['discount_amount'] ?? 0);
             $discountAmount = min(max($discountAmount, 0), $fee);
             if ($discountPct > 0 && $discountAmount <= 0) {
                 $discountAmount = (float) Helpers::getDiscountAmount($discountPct, $fee);
             }
 
-            $paymentMethod = $invoiceData['payment_method'] ?? null;
-            $paidAmount = max((float) ($invoiceData['paid_amount'] ?? 0), 0);
+            $paymentMethod = Data::nullableString($invoiceData['payment_method'] ?? null);
+            $paidAmount = max(Data::float($invoiceData['paid_amount'] ?? 0), 0);
 
             if (PaymentMethod::isOnline($paymentMethod)) {
                 $paidAmount = 0;
             }
 
-            $invoiceDate = Carbon::parse($invoiceData['date'] ?? $startDate)->toDateString();
-            $invoiceDueDate = Carbon::parse($invoiceData['due_date'] ?? $invoiceDate)->toDateString();
+            $invoiceDate = Carbon::parse(Data::string($invoiceData['date'] ?? $startDate))->toDateString();
+            $invoiceDueDate = Carbon::parse(Data::string($invoiceData['due_date'] ?? $invoiceDate))->toDateString();
 
             $invoice = Invoice::create([
                 'number' => $invoiceData['number'] ?? null,
@@ -112,5 +114,7 @@ class SubscriptionRenewalService
                 'invoice' => $invoice->refresh(),
             ];
         });
+
+        return $result;
     }
 }

@@ -98,10 +98,7 @@ it('keeps membership and recent transactions full width on md', function (): voi
     $membership = new MembershipMetricsWidget;
     $recentTransactions = new RecentTransactionsTableWidget;
 
-    expect($membership->getColumnSpan())->toBe([
-        'default' => 1,
-        'md' => 'full',
-    ]);
+    expect($membership->getColumnSpan())->toBe('full');
 
     expect($recentTransactions->getColumnSpan())->toBe([
         'default' => 1,

@@ -6,8 +6,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int|null $invoice_id
+ * @property string $type
+ * @property float|int|string|null $amount
+ * @property \Illuminate\Support\Carbon|null $occurred_at
+ * @property string|null $payment_method
+ * @property string|null $note
+ * @property string|null $reference_id
+ * @property int|null $created_by
+ * @property-read Invoice|null $invoice
+ */
 class InvoiceTransaction extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     /**
@@ -31,7 +44,7 @@ class InvoiceTransaction extends Model
     /**
      * Get the invoice that this transaction belongs to.
      *
-     * @return BelongsTo
+     * @return BelongsTo<Invoice, $this>
      */
     public function invoice(): BelongsTo
     {
@@ -40,17 +53,19 @@ class InvoiceTransaction extends Model
 
     /**
      * The "booted" method of the model.
-     *
-     * @return void
      */
     protected static function booted(): void
     {
         static::saved(function (self $transaction): void {
-            $transaction->invoice?->syncFromTransactions();
+            if ($transaction->invoice instanceof Invoice) {
+                $transaction->invoice->syncFromTransactions();
+            }
         });
 
         static::deleted(function (self $transaction): void {
-            $transaction->invoice?->syncFromTransactions();
+            if ($transaction->invoice instanceof Invoice) {
+                $transaction->invoice->syncFromTransactions();
+            }
         });
     }
 }

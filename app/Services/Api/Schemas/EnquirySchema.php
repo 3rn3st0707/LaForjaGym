@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\Enquiry;
 use App\Models\User;
 use App\Rules\ModelExists;
@@ -113,7 +114,7 @@ final class EnquirySchema
             'date' => $enquiry->date?->toDateString(),
             'gender' => $enquiry->gender ? (string) $enquiry->gender : null,
             'dob' => $enquiry->dob?->toDateString(),
-            'status' => $enquiry->status?->value ?? (is_string($enquiry->status) ? $enquiry->status : null),
+            'status' => Status::valueOf($enquiry->status),
             'address' => $enquiry->address ? (string) $enquiry->address : null,
             'country' => $enquiry->country ? (string) $enquiry->country : null,
             'state' => $enquiry->state ? (string) $enquiry->state : null,

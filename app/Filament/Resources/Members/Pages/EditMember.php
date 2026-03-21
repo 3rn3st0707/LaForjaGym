@@ -3,12 +3,16 @@
 namespace App\Filament\Resources\Members\Pages;
 
 use App\Filament\Resources\Members\MemberResource;
+use App\Models\Member;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
+/**
+ * @property-read Member $record
+ */
 class EditMember extends EditRecord
 {
     protected static string $resource = MemberResource::class;

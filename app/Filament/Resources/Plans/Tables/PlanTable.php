@@ -68,7 +68,7 @@ class PlanTable
 
                 $records = __('app.resources.plans.plural');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
@@ -89,15 +89,15 @@ class PlanTable
                     ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
                     : $base;
             })
-            ->emptyStateDescription(function ($livewire): ?string {
+            ->emptyStateDescription(function ($livewire): string {
                 if (! Service::exists()) {
                     return __('app.empty.go_to_services_to_create');
                 }
 
-                $records = __('app.resources.plans.plural');
-                $record = __('app.resources.plans.singular');
+                $records = (string) __('app.resources.plans.plural');
+                $record = (string) __('app.resources.plans.singular');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
@@ -108,8 +108,8 @@ class PlanTable
                         : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : (string) __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : (string) __('app.common.today');
 
                 if ($tab === 'all') {
                     return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);

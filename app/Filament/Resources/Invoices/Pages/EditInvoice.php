@@ -3,12 +3,16 @@
 namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Models\Invoice;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
+/**
+ * @property-read Invoice $record
+ */
 class EditInvoice extends EditRecord
 {
     protected static string $resource = InvoiceResource::class;
@@ -33,7 +37,7 @@ class EditInvoice extends EditRecord
         return [
             __('app.navigation.groups.billing'),
             InvoiceResource::getUrl('index') => InvoiceResource::getNavigationLabel(),
-            $this->record->number,
+            (string) $this->record->number,
         ];
     }
 }

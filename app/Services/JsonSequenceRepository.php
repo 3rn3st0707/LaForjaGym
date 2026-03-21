@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\SequenceRepository;
 use App\Contracts\SettingsRepository;
 use App\Helpers\Helpers;
+use App\Support\Data;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -35,6 +36,7 @@ class JsonSequenceRepository implements SequenceRepository
         [$start, $end] = Helpers::getFiscalSpan($date);
         $settings = $this->settingsRepository->get();
 
+        /** @var \Illuminate\Database\Eloquent\Model $model */
         $model = new $modelClass;
         $table = $model->getTable();
 
@@ -45,7 +47,7 @@ class JsonSequenceRepository implements SequenceRepository
         $rawPrefix = data_get($settings, "{$type}.prefix", '');
         $rawSaved = data_get($settings, "{$type}.last_number", '');
 
-        $prefix = trim((string) $rawPrefix, '-');
+        $prefix = trim(Data::string($rawPrefix), '-');
         $prefix = filled($prefix) ? $prefix : 'GY';
         $separator = $prefix !== '' ? '-' : '';
         $match = $prefix.$separator;
@@ -54,14 +56,14 @@ class JsonSequenceRepository implements SequenceRepository
             ->whereBetween($dateColumn, [$start->toDateString(), $end->toDateString()])
             ->pluck($modelColumn ?? 'number')
             ->map(
-                fn ($raw) => Str::of((string) $raw)
+                fn ($raw) => Str::of(Data::string($raw))
                     ->whenStartsWith($match, fn ($s) => $s->after($match))
                     ->__toString()
             )
             ->map(fn ($v) => is_numeric($v) ? (int) $v : 0)
             ->max() ?: 0;
 
-        $lastFromSettings = Str::of((string) $rawSaved)
+        $lastFromSettings = Str::of(Data::string($rawSaved))
             ->whenStartsWith($match, fn ($s) => $s->after($match))
             ->__toString();
         $lastFromSettings = is_numeric($lastFromSettings)
@@ -72,7 +74,7 @@ class JsonSequenceRepository implements SequenceRepository
 
         return str($prefix)
             ->when($separator !== '', fn ($s) => $s->append($separator))
-            ->append($next)
+            ->append((string) $next)
             ->__toString();
     }
 
@@ -90,7 +92,7 @@ class JsonSequenceRepository implements SequenceRepository
 
         $settings = $this->settingsRepository->get();
         $rawPrefix = data_get($settings, "{$type}.prefix", 'GY');
-        $prefix = trim((string) $rawPrefix, '-');
+        $prefix = trim(Data::string($rawPrefix), '-');
 
         $numericPart = Str::of($newNumber)
             ->match('/(\\d+)$/')
@@ -102,7 +104,7 @@ class JsonSequenceRepository implements SequenceRepository
 
         $incoming = (int) $numericPart;
         $rawStored = data_get($settings, "{$type}.last_number", '');
-        $storedNumeric = Str::of((string) $rawStored)
+        $storedNumeric = Str::of(Data::string($rawStored))
             ->match('/(\\d+)$/')
             ->__toString();
         $current = ctype_digit($storedNumeric) ? (int) $storedNumeric : 0;
@@ -115,8 +117,11 @@ class JsonSequenceRepository implements SequenceRepository
             $settings[$type] = [];
         }
 
-        $settings[$type]['last_number'] = $incoming;
-        $settings[$type]['prefix'] = $prefix;
+        /** @var array<string, mixed> $typeSettings */
+        $typeSettings = $settings[$type];
+        $typeSettings['last_number'] = $incoming;
+        $typeSettings['prefix'] = $prefix;
+        $settings[$type] = $typeSettings;
 
         $this->settingsRepository->put($settings);
     }

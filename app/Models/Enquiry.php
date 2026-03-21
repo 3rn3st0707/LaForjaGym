@@ -10,8 +10,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string $name
+ * @property string|null $email
+ * @property string|null $contact
+ * @property \Illuminate\Support\Carbon|null $date
+ * @property string|null $gender
+ * @property \Illuminate\Support\Carbon|null $dob
+ * @property Status|null $status
+ * @property string|null $address
+ * @property string|null $country
+ * @property string|null $city
+ * @property string|null $state
+ * @property string|null $pincode
+ * @property array<int, mixed>|null $interested_in
+ * @property string|null $source
+ * @property string|null $goal
+ * @property \Illuminate\Support\Carbon|null $start_by
+ * @property-read User|null $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, FollowUp> $followUps
+ */
 class Enquiry extends Model
 {
+    /** @use HasFactory<\Database\Factories\EnquiryFactory> */
     use CascadesSoftDeletes, HasFactory, SoftDeletes;
 
     /**
@@ -47,10 +70,14 @@ class Enquiry extends Model
         'status' => Status::class,
     ];
 
+    /** @var list<string> */
     protected $dates = ['deleted_at'];
 
     /**
      * Get the followUps for the enquiry.
+     */
+    /**
+     * @return HasMany<FollowUp, $this>
      */
     public function followUps(): HasMany
     {
@@ -59,6 +86,9 @@ class Enquiry extends Model
 
     /**
      * Get the user for the enquiry.
+     */
+    /**
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {

@@ -43,6 +43,9 @@ class FollowUpResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<FollowUp>  $query
+     */
     public static function modifyGlobalSearchQuery(Builder $query, string $search): void
     {
         $query->with(['enquiry', 'user']);
@@ -50,7 +53,7 @@ class FollowUpResource extends Resource
 
     public static function getGlobalSearchResultTitle(Model $record): string
     {
-        /** @var FollowUp $record */
+        assert($record instanceof FollowUp);
         $title = $record->enquiry?->name;
 
         if (blank($title)) {
@@ -62,7 +65,7 @@ class FollowUpResource extends Resource
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        /** @var FollowUp $record */
+        assert($record instanceof FollowUp);
         $details = [];
 
         if ($record->schedule_date) {
@@ -93,9 +96,7 @@ class FollowUpResource extends Resource
     }
 
     /**
-     * Get the Filament table columns for the follow-up list view.
-     *
-     * @return array
+     * Get the Filament table configuration for the list view.
      */
     public static function table(Table $table): Table
     {

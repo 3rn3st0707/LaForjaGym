@@ -52,6 +52,9 @@ class InvoiceResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<Invoice>  $query
+     */
     public static function modifyGlobalSearchQuery(Builder $query, string $search): void
     {
         $query->with(['subscription.member', 'subscription.plan']);
@@ -59,7 +62,7 @@ class InvoiceResource extends Resource
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        /** @var Invoice $record */
+        assert($record instanceof Invoice);
         $details = [];
 
         if ($record->subscription?->member?->name) {
@@ -129,6 +132,9 @@ class InvoiceResource extends Resource
         ];
     }
 
+    /**
+     * @return Builder<Invoice>
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

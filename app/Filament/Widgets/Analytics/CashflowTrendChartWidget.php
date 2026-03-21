@@ -6,6 +6,7 @@ use App\Helpers\Helpers;
 use App\Services\Analytics\AnalyticsService;
 use App\Support\Analytics\AnalyticsDateRange;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
 use Filament\Support\RawJs;
 use Filament\Widgets\ChartWidget;
@@ -71,7 +72,7 @@ class CashflowTrendChartWidget extends ChartWidget
     {
         $rangeKey = $this->filter ?? '7days';
 
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
 
         [$start, $end] = match ($rangeKey) {
             '30days' => [$today->subDays(29), $today],
@@ -187,6 +188,10 @@ JS);
             $period = CarbonPeriod::create($range->start->toDateString(), $range->end->toDateString());
 
             foreach ($period as $date) {
+                if (! $date instanceof CarbonInterface) {
+                    continue;
+                }
+
                 $dayKey = $date->toDateString();
 
                 $labels[] = CarbonImmutable::parse($date)->translatedFormat('j M Y');
@@ -199,6 +204,10 @@ JS);
 
             $period = CarbonPeriod::create($start, '1 month', $end);
             foreach ($period as $date) {
+                if (! $date instanceof CarbonInterface) {
+                    continue;
+                }
+
                 $monthKey = $date->format('Y-m');
 
                 $labels[] = CarbonImmutable::parse($date)->translatedFormat('M Y');

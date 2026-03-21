@@ -24,7 +24,8 @@ final class InvoiceDocument
      */
     public static function loadForRendering(Invoice $invoice): Invoice
     {
-        return Invoice::query()
+        /** @var Invoice $document */
+        $document = Invoice::query()
             ->withTrashed()
             ->with([
                 'subscription' => function ($query): void {
@@ -37,7 +38,10 @@ final class InvoiceDocument
                 },
                 'transactions' => fn ($query) => $query->latest('occurred_at'),
             ])
-            ->findOrFail($invoice->getKey());
+            ->whereKey($invoice->getKey())
+            ->firstOrFail();
+
+        return $document;
     }
 
     /**
@@ -109,7 +113,7 @@ final class InvoiceDocument
             'plan' => $invoice->subscription?->plan,
             'settings' => $settings,
             'missing' => $missing,
-            'generated_at' => Carbon::now(config('app.timezone'))->toDateTimeString(),
+            'generated_at' => Carbon::now(\App\Support\AppConfig::timezone())->toDateTimeString(),
             'logo_data_uri' => self::logoDataUriFromSettings($settings),
         ];
     }

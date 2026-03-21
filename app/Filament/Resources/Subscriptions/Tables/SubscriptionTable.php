@@ -73,9 +73,9 @@ class SubscriptionTable
                     return __('app.empty.no_records', ['records' => __('app.resources.plans.plural')]);
                 }
 
-                $records = __('app.resources.subscriptions.plural');
+                $records = (string) __('app.resources.subscriptions.plural');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$from, $to] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
@@ -94,7 +94,7 @@ class SubscriptionTable
                     ? __('app.empty.no_status_records_in_range', ['status' => $status, 'records' => $records])
                     : __('app.empty.no_status_records', ['status' => $status, 'records' => $records]);
             })
-            ->emptyStateDescription(function ($livewire): ?string {
+            ->emptyStateDescription(function ($livewire): string {
                 if (! Member::exists()) {
                     return __('app.empty.create_to_get_started', ['resource' => __('app.resources.members.singular')]);
                 }
@@ -106,7 +106,7 @@ class SubscriptionTable
                 $records = __('app.resources.subscriptions.plural');
                 $record = __('app.resources.subscriptions.singular');
                 $tab = (string) ($livewire->activeTab ?? 'all');
-                $status = $tab !== 'all' ? __('app.status.'.$tab) : null;
+                $status = $tab !== 'all' ? (string) __('app.status.'.$tab) : null;
 
                 $dates = $livewire->getTableFilterState('date') ?? [];
                 [$fromRaw, $toRaw] = [$dates['date_from'] ?? null, $dates['date_to'] ?? null];
@@ -117,8 +117,8 @@ class SubscriptionTable
                         : __('app.empty.create_to_get_started', ['resource' => $record]);
                 }
 
-                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : __('app.common.the_beginning');
-                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : __('app.common.today');
+                $from = $fromRaw ? Carbon::parse($fromRaw)->format('d-m-Y') : (string) __('app.common.the_beginning');
+                $to = $toRaw ? Carbon::parse($toRaw)->format('d-m-Y') : (string) __('app.common.today');
 
                 if ($tab === 'all') {
                     return __('app.empty.found_none_between', ['records' => $records, 'from' => $from, 'to' => $to]);
@@ -178,7 +178,7 @@ class SubscriptionTable
                             ->label(__('app.actions.change_status'))
                             ->disabled()
                             ->color('gray')
-                            ->hidden(fn ($record) => in_array($record->status->value, ['expired', 'upcoming', 'renewed'])),
+                            ->hidden(fn ($record): bool => in_array($record->status?->value, ['expired', 'upcoming', 'renewed'], true)),
                         Action::make('mark_expiring')
                             ->label(__('app.actions.mark_as_expiring'))
                             ->color('warning')
@@ -190,7 +190,7 @@ class SubscriptionTable
                                     ->warning()
                                     ->send();
                             }))
-                            ->visible(fn ($record) => $record->status->value == 'ongoing'),
+                            ->visible(fn ($record): bool => $record->status?->value === 'ongoing'),
                         Action::make('mark_expired')
                             ->label(__('app.actions.mark_as_expired'))
                             ->color('danger')
@@ -202,7 +202,7 @@ class SubscriptionTable
                                     ->danger()
                                     ->send();
                             }))
-                            ->visible(fn ($record) => in_array($record->status->value, ['ongoing', 'expiring'])),
+                            ->visible(fn ($record): bool => in_array($record->status?->value, ['ongoing', 'expiring'], true)),
                     ])->dropdown(false),
                     ActionGroup::make([
                         Action::make('heading_actions')
@@ -218,7 +218,7 @@ class SubscriptionTable
                             ->modalWidth('6xl')
                             ->closeModalByClickingAway(false)
                             ->visible(function (Subscription $record): bool {
-                                if (! in_array($record->status->value, ['expiring', 'expired'])) {
+                                if (! in_array($record->status?->value, ['expiring', 'expired'], true)) {
                                     return false;
                                 }
 
@@ -226,7 +226,7 @@ class SubscriptionTable
                                     return false;
                                 }
 
-                                $today = Carbon::today(config('app.timezone'));
+                                $today = Carbon::today(\App\Support\AppConfig::timezone());
 
                                 return ! Subscription::query()
                                     ->where('member_id', $record->member_id)
@@ -241,7 +241,7 @@ class SubscriptionTable
                             ->url(fn ($record) => SubscriptionResource::getUrl('view', ['record' => $record])),
                         EditAction::make()
                             ->hiddenLabel()
-                            ->hidden(fn ($record) => in_array($record->status->value, ['expired', 'renewed']))
+                            ->hidden(fn ($record): bool => in_array($record->status?->value, ['expired', 'renewed'], true))
                             ->url(fn ($record) => SubscriptionResource::getUrl('edit', ['record' => $record])),
                         DeleteAction::make()->hiddenLabel(),
                     ])->dropdown(false),

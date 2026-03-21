@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\Schemas;
 
+use App\Enums\Status;
 use App\Models\Member;
 use App\Rules\ModelUnique;
 use Illuminate\Support\Facades\Storage;
@@ -119,7 +120,7 @@ final class MemberSchema
             'pincode' => $member->pincode ? (string) $member->pincode : null,
             'source' => $member->source ? (string) $member->source : null,
             'goal' => $member->goal ? (string) $member->goal : null,
-            'status' => $member->status?->value ?? (is_string($member->status) ? $member->status : null),
+            'status' => Status::valueOf($member->status),
             'created_at' => $member->created_at?->toISOString(),
             'updated_at' => $member->updated_at?->toISOString(),
             'deleted_at' => $member->deleted_at?->toISOString(),

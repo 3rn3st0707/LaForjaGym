@@ -63,7 +63,7 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
     {
         $rangeKey = $this->filter ?: '6months';
 
-        $today = CarbonImmutable::today(config('app.timezone'));
+        $today = CarbonImmutable::today(\App\Support\AppConfig::timezone());
         $monthStart = $today->startOfMonth();
 
         [$start, $end] = match ($rangeKey) {
@@ -137,7 +137,7 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
     }
 
     /**
-     * @return Collection<int, array{label: string, total: float, color: string, flex: float}>
+     * @return Collection<int, array{label: string, total: float, flex: float, color: string}>
      */
     private function buildSegments(AnalyticsDateRange $range): Collection
     {
@@ -150,17 +150,18 @@ class ExpenseCategoriesDoughnutChartWidget extends Widget
             ->values()
             ->map(function (array $row, int $index) use ($palette, $otherColor): array {
                 $category = (string) $row['category'];
-                $label = $category === 'Other'
+                $resolvedLabel = Helpers::getExpenseCategoryLabel($category);
+                $label = (string) ($category === 'Other'
                     ? __('app.analytics.other')
-                    : (Helpers::getExpenseCategoryLabel($category) ?? $category);
+                    : (is_string($resolvedLabel) && filled($resolvedLabel) ? $resolvedLabel : $category));
 
                 return [
                     'label' => $label,
                     'total' => (float) $row['total'],
-                    'flex' => max((float) $row['total'], 0),
+                    'flex' => (float) max((float) $row['total'], 0),
                     'color' => $category === 'Other'
                         ? $otherColor
-                        : ($palette[$index] ?? $palette[array_key_last($palette)]),
+                        : ($palette[$index] ?? $palette[max(array_key_last($palette) ?? 0, 0)]),
                 ];
             })
             ->filter(fn (array $segment): bool => $segment['flex'] > 0)
