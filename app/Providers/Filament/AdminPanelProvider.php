@@ -96,12 +96,14 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->databaseNotifications()
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            /*
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
                 fn (): HtmlString => new HtmlString(
                     Blade::render('@include("filament.auth.dev-credentials-banner")')
                 ),
             )
+                */
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn (): HtmlString => new HtmlString(
