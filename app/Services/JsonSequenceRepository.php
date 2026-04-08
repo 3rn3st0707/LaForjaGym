@@ -8,6 +8,7 @@ use App\Helpers\Helpers;
 use App\Support\Data;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * JSON-backed sequence generator (OSS default).
@@ -34,6 +35,7 @@ class JsonSequenceRepository implements SequenceRepository
     ): string {
         $date = Helpers::parseDate($dateString);
         [$start, $end] = Helpers::getFiscalSpan($date);
+        $shouldScopeToFiscalSpan = $date->between($start, $end);
         $settings = $this->settingsRepository->get();
 
         /** @var \Illuminate\Database\Eloquent\Model $model */
@@ -52,8 +54,20 @@ class JsonSequenceRepository implements SequenceRepository
         $separator = $prefix !== '' ? '-' : '';
         $match = $prefix.$separator;
 
-        $lastFromDb = $modelClass::query()
-            ->whereBetween($dateColumn, [$start->toDateString(), $end->toDateString()])
+        $query = $modelClass::query()
+            ->withoutGlobalScopes();
+
+        // If the model uses SoftDeletes, include trashed rows to avoid reusing numbers
+        // that still exist in the table (and may still be protected by unique indexes).
+        if (in_array(SoftDeletes::class, class_uses_recursive($modelClass), true) && method_exists($query, 'withTrashed')) {
+            $query = $query->withTrashed();
+        }
+
+        $lastFromDb = $query
+            ->when(
+                $shouldScopeToFiscalSpan,
+                fn ($q) => $q->whereBetween($dateColumn, [$start->toDateString(), $end->toDateString()]),
+            )
             ->pluck($modelColumn ?? 'number')
             ->map(
                 fn ($raw) => Str::of(Data::string($raw))
@@ -85,10 +99,8 @@ class JsonSequenceRepository implements SequenceRepository
     ): void {
         $date = Helpers::parseDate($date);
         [$start, $end] = Helpers::getFiscalSpan($date);
-
-        if (! $date->between($start, $end)) {
-            return;
-        }
+        // If the fiscal year configuration creates a gap (date not between start/end),
+        // still persist the last_number to prevent reusing identifiers.
 
         $settings = $this->settingsRepository->get();
         $rawPrefix = data_get($settings, "{$type}.prefix", 'GY');

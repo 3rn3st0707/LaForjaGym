@@ -14,7 +14,6 @@ use App\Support\Billing\PaymentMethod;
 use App\Support\Data;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -49,6 +48,7 @@ class SubscriptionForm
             ->columns(1)
             ->components([
                 Group::make()
+                    ->key('subscription.header')
                     ->columns(6)
                     ->columnSpanFull()
                     ->schema([
@@ -70,11 +70,15 @@ class SubscriptionForm
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(fn (Plan $record): string => self::formatPlanOptionLabel($record))
                             ->afterStateUpdated(function (Get $get, Set $set) {
+                                $invoices = self::invoiceItems($get);
+
+                                if (count($invoices) !== 1) {
+                                    return;
+                                }
+
                                 $plan = self::planFromState($get);
                                 $fee = (float) ($plan->amount ?? 0);
                                 $taxRate = Helpers::getTaxRate() ?: 0;
-
-                                $invoices = self::invoiceItems($get);
 
                                 foreach ($invoices as $index => $invoice) {
                                     $discount = \App\Support\Data::float($invoice['discount_amount'] ?? 0);
@@ -131,18 +135,18 @@ class SubscriptionForm
                             }),
                     ]),
                 Section::make(__('app.titles.invoice_details'))
+                    ->key('subscription.invoice_details')
                     ->hiddenOn('edit')
                     ->columnSpanFull()
                     ->schema(
                         [
                             Repeater::make('invoices')
                                 ->relationship('invoices')
+                                ->key('subscription.invoices')
                                 ->itemLabel('')
                                 ->hiddenLabel()
                                 ->columnSpanFull()
                                 ->minItems(1)
-                                ->defaultItems(1)
-                                ->maxItems(1)
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columns(4)
@@ -154,7 +158,6 @@ class SubscriptionForm
                                         ->schema([
                                             TextInput::make('number')
                                                 ->label(__('app.fields.invoice_number'))
-                                                ->required()
                                                 ->readOnly()
                                                 ->disabled()
                                                 ->dehydrated()
@@ -163,16 +166,26 @@ class SubscriptionForm
                                                     'invoice',
                                                     Invoice::class,
                                                     self::stringState($get, 'date')
-                                                )),
+                                                ))
+                                                ->afterStateHydrated(function (Get $get, Set $set, ?string $state): void {
+                                                    // Browser back / cached Livewire state can keep an old invoice number.
+                                                    // If the hydrated number already exists, regenerate a fresh one.
+                                                    if (blank($state) || Invoice::withTrashed()->where('number', $state)->exists()) {
+                                                        $set('number', Helpers::generateLastNumber(
+                                                            'invoice',
+                                                            Invoice::class,
+                                                            self::stringState($get, 'date'),
+                                                        ));
+                                                    }
+                                                }),
                                             DatePicker::make('date')
                                                 ->label(__('app.fields.date'))
-                                                ->required()
                                                 ->reactive()
                                                 ->default(now()),
                                             DatePicker::make('due_date')
                                                 ->label(__('app.fields.due_date'))
-                                                ->required()
-                                                ->reactive(),
+                                                ->reactive()
+                                                ->default(now()->addDays(30)),
                                             Select::make('discount')
                                                 ->label(__('app.fields.discount'))
                                                 ->options(Helpers::getDiscounts())
@@ -223,12 +236,10 @@ class SubscriptionForm
                                                     $livewire->validateOnly($component->getStatePath());
                                                     self::recalculateInvoiceSummary($get, $set);
                                                 }),
-                                            Radio::make('payment_method')
+                                            Select::make('payment_method')
                                                 ->label(__('app.fields.payment_method'))
                                                 ->options(self::paymentMethodOptions())
                                                 ->default('cash')
-                                                ->inline()
-                                                ->inlineLabel(false)
                                                 ->reactive()
                                                 ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
                                                     if (PaymentMethod::isOnline($state)) {
@@ -236,8 +247,7 @@ class SubscriptionForm
                                                     }
 
                                                     self::recalculateInvoiceSummary($get, $set);
-                                                })
-                                                ->required(),
+                                                }),
                                         ]),
                                     Fieldset::make(__('app.titles.summary'))
                                         ->columns(1)
@@ -362,7 +372,6 @@ class SubscriptionForm
                         ->schema([
                             TextInput::make('invoice_number')
                                 ->label(__('app.fields.invoice_number'))
-                                ->required()
                                 ->readOnly()
                                 ->disabled()
                                 ->dehydrated()
@@ -371,7 +380,16 @@ class SubscriptionForm
                                     'invoice',
                                     Invoice::class,
                                     self::stringState($get, 'invoice_date'),
-                                )),
+                                ))
+                                ->afterStateHydrated(function (Get $get, Set $set, ?string $state): void {
+                                    if (blank($state) || Invoice::withTrashed()->where('number', $state)->exists()) {
+                                        $set('invoice_number', Helpers::generateLastNumber(
+                                            'invoice',
+                                            Invoice::class,
+                                            self::stringState($get, 'invoice_date'),
+                                        ));
+                                    }
+                                }),
                             DatePicker::make('invoice_date')
                                 ->label(__('app.fields.invoice_date'))
                                 ->native(false)
@@ -440,12 +458,10 @@ class SubscriptionForm
                                 ->afterStateUpdated(function (Get $get, Set $set): void {
                                     self::recalculateRenewInvoiceSummary($get, $set);
                                 }),
-                            Radio::make('payment_method')
+                            Select::make('payment_method')
                                 ->label(__('app.fields.payment_method'))
                                 ->options(self::paymentMethodOptions())
                                 ->default('cash')
-                                ->inline()
-                                ->inlineLabel(false)
                                 ->reactive()
                                 ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
                                     if (PaymentMethod::isOnline($state)) {
@@ -453,8 +469,7 @@ class SubscriptionForm
                                     }
 
                                     self::recalculateRenewInvoiceSummary($get, $set);
-                                })
-                                ->required(),
+                                }),
                         ])->columnSpan(5),
                     Fieldset::make(__('app.titles.summary'))
                         ->columns(1)
@@ -635,7 +650,9 @@ class SubscriptionForm
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Preserve repeater item keys (UUIDs) when normalizing.
+     *
+     * @return array<string|int, array<string, mixed>>
      */
     private static function invoiceItems(Get $get): array
     {
@@ -647,12 +664,12 @@ class SubscriptionForm
 
         $normalized = [];
 
-        foreach ($items as $item) {
+        foreach ($items as $itemKey => $item) {
             if (! is_array($item)) {
                 continue;
             }
 
-            $normalized[] = \App\Support\Data::map($item);
+            $normalized[$itemKey] = \App\Support\Data::map($item);
         }
 
         return $normalized;

@@ -164,14 +164,6 @@ class Invoice extends Model
         parent::boot();
 
         static::saving(function (self $invoice): void {
-            if (! $invoice->date) {
-                $invoice->date = Carbon::now();
-            }
-
-            if (! $invoice->due_date) {
-                $invoice->due_date = $invoice->date;
-            }
-
             if (! $invoice->number) {
                 $invoice->number = Helpers::generateLastNumber('invoice', Invoice::class, $invoice->date);
             }
